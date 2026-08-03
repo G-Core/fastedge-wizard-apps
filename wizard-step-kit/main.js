@@ -185,10 +185,6 @@ var GcOptionalPanels = class extends HTMLElement {
       panel.setAttribute("aria-selected", "false");
       panel.setAttribute("tabindex", "0");
       panel.classList.add("wizard-panel");
-      const content = document.createElement("div");
-      content.className = "wizard-panel-content";
-      content.hidden = true;
-      [...panel.children].forEach((c) => content.appendChild(c));
       const header = document.createElement("div");
       header.className = "wizard-panel-header";
       const indicator = document.createElement("span");
@@ -198,16 +194,15 @@ var GcOptionalPanels = class extends HTMLElement {
       labelEl.className = "wizard-panel-label";
       labelEl.textContent = panel.getAttribute("label") || val;
       header.append(indicator, labelEl);
-      panel.append(header, content);
-      const toggle = (e) => {
-        if (e.target.closest(".wizard-panel-content")) return;
-        this.#toggle(val);
-      };
-      panel.addEventListener("click", toggle);
+      panel.append(header);
+      panel.addEventListener("click", (e) => {
+        if (e.target.closest(".wizard-panel-header")) this.#toggle(val);
+      });
       panel.addEventListener("keydown", (e) => {
+        if (e.target !== panel) return;
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          toggle();
+          this.#toggle(val);
         }
       });
     });
@@ -231,8 +226,6 @@ var GcOptionalPanels = class extends HTMLElement {
     this.#panels().forEach((panel) => {
       const selected = this.#selected.has(panel.getAttribute("value") ?? "");
       panel.setAttribute("aria-selected", String(selected));
-      const content = panel.querySelector(".wizard-panel-content");
-      if (content) content.hidden = !selected;
     });
   }
 };
@@ -343,7 +336,6 @@ var GcDeployProgress = class extends HTMLElement {
       (result.createdFastedgeApps || []).forEach(
         (a) => ul.append(mk("li", null, `${a.ref}: app #${a.id}${a.url ? ` \u2192 ${a.url}` : ""}`))
       );
-      appendCreated(ul, result.createdFastedgeStores, "store");
       appendCreated(ul, result.createdCdnOrigins, "CDN origin");
       appendCreated(ul, result.createdCdnRules, "CDN rule");
       if (ul.children.length) box.append(ul);

@@ -141,6 +141,8 @@ gc-optional-panels {
 }
 
 .wizard-panel {
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--gc-wizard-border);
     border-radius: var(--gc-wizard-radius);
     margin-bottom: 0.5rem;
@@ -156,9 +158,11 @@ gc-optional-panels {
 .wizard-panel[aria-selected="true"] {
     border-color: var(--gc-wizard-brand);
     background: var(--gc-wizard-surface);
+    padding-bottom: 1rem;
 }
 
 .wizard-panel-header {
+    order: -1; /* header appended last in DOM (React-safe); shown first */
     display: flex;
     align-items: center;
     gap: 0.625rem;
@@ -185,8 +189,14 @@ gc-optional-panels {
     font-weight: 500;
 }
 
-.wizard-panel-content {
-    padding: 0 1rem 1rem;
+/* Body = every direct child except the header. Collapsed unless selected. */
+.wizard-panel:not([aria-selected="true"]) > :not(.wizard-panel-header) {
+    display: none;
+}
+
+.wizard-panel[aria-selected="true"] > :not(.wizard-panel-header) {
+    padding-left: 1rem;
+    padding-right: 1rem;
     color: var(--gc-wizard-text-muted);
 }
 
