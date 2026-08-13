@@ -301,6 +301,9 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   color: var(--gc-wizard-text-muted);
   max-width: 60ch;
 }
+.totp-lede code {
+  white-space: nowrap;
+}
 .totp-field {
   display: block;
   margin-bottom: 1rem;
@@ -353,4 +356,53 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   margin: 0 0 0.25rem;
   color: var(--gc-wizard-text-muted);
   overflow-wrap: break-word;
+}
+.totp-flow {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  height: auto;
+  margin: 0.5rem 0 1rem;
+}
+.totp-flow-box {
+  fill: var(--gc-wizard-surface);
+  stroke: var(--gc-wizard-border);
+  stroke-width: 1.5px;
+}
+.totp-flow-text {
+  fill: var(--gc-wizard-text);
+  font-family: var(--gc-wizard-font);
+  font-size: 13px;
+}
+.totp-flow-text--muted {
+  fill: var(--gc-wizard-text-muted);
+  font-family: var(--gc-wizard-font);
+  font-size: 11px;
+}
+.totp-flow-text--blocked {
+  fill: var(--gc-wizard-danger);
+  font-family: var(--gc-wizard-font);
+  font-size: 12px;
+  font-weight: 600;
+}
+.totp-flow-arrow {
+  stroke: var(--gc-wizard-text-muted);
+  stroke-width: 1.5px;
+  fill: none;
+}
+.totp-flow-arrow--ok {
+  stroke: var(--gc-wizard-success);
+}
+.totp-flow-arrow--blocked {
+  stroke: var(--gc-wizard-danger);
+  stroke-dasharray: 4 3;
+}
+.totp-flow-marker {
+  fill: var(--gc-wizard-text-muted);
+}
+.totp-flow-marker--ok {
+  fill: var(--gc-wizard-success);
+}
+.totp-flow-marker--blocked {
+  fill: var(--gc-wizard-danger);
 }
