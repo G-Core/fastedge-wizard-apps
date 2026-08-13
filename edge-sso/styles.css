@@ -297,31 +297,31 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
 }
 
 /* src/styles.css */
-.totp-lede {
+.sso-lede {
   color: var(--gc-wizard-text-muted);
   max-width: 60ch;
 }
-.totp-field {
+.sso-field {
   display: block;
   margin-bottom: 1rem;
   max-width: 60ch;
 }
-.totp-field > span {
+.sso-field > span {
   display: block;
   font-weight: 500;
   margin-bottom: 0.25rem;
 }
-.totp-field input,
-.totp-field select {
+.sso-field input,
+.sso-field select {
   width: 100%;
 }
-.totp-hint {
+.sso-hint {
   display: block;
   color: var(--gc-wizard-text-muted);
   font-size: 0.8125rem;
   margin-top: 0.25rem;
 }
-.totp-note {
+.sso-note {
   border: 1px solid var(--gc-wizard-border);
   border-left-width: 4px;
   border-radius: var(--gc-wizard-radius);
@@ -330,26 +330,26 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   background: var(--gc-wizard-surface);
   font-size: 0.875rem;
 }
-.totp-note--warn {
+.sso-note--warn {
   border-left-color: var(--gc-wizard-warning);
 }
-.totp-note--info {
+.sso-note--info {
   border-left-color: var(--gc-wizard-info);
 }
-.totp-note--danger {
+.sso-note--danger {
   border-left-color: var(--gc-wizard-danger);
 }
-.totp-summary {
+.sso-summary {
   border: 1px solid var(--gc-wizard-border);
   border-radius: var(--gc-wizard-radius);
   padding: 0.5rem 1rem;
   margin: 0.75rem 0;
 }
-.totp-summary dt {
+.sso-summary dt {
   font-weight: 600;
   margin-top: 0.5rem;
 }
-.totp-summary dd {
+.sso-summary dd {
   margin: 0 0 0.25rem;
   color: var(--gc-wizard-text-muted);
   overflow-wrap: break-word;
