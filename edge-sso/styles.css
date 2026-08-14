@@ -321,6 +321,32 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   font-size: 0.8125rem;
   margin-top: 0.25rem;
 }
+.sso-checklist {
+  display: block;
+  margin-bottom: 1rem;
+  max-width: 60ch;
+  border: 0;
+  padding: 0;
+}
+.sso-checklist > span:first-child {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+.sso-checkbox {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+  font-size: inherit;
+  color: inherit;
+  margin: 0.25rem 0;
+}
+.sso-checkbox input {
+  width: auto;
+  flex: none;
+}
 .sso-note {
   border: 1px solid var(--gc-wizard-border);
   border-left-width: 4px;
@@ -353,4 +379,40 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   margin: 0 0 0.25rem;
   color: var(--gc-wizard-text-muted);
   overflow-wrap: break-word;
+}
+.sso-flow {
+  display: block;
+  width: 100%;
+  max-width: 32rem;
+  height: auto;
+  margin: 0.5rem 0 1rem;
+}
+.sso-flow-box {
+  fill: var(--gc-wizard-surface);
+  stroke: var(--gc-wizard-border);
+  stroke-width: 1.5px;
+}
+.sso-flow-text {
+  fill: var(--gc-wizard-text);
+  font-family: var(--gc-wizard-font);
+  font-size: 13px;
+}
+.sso-flow-text--muted {
+  fill: var(--gc-wizard-text-muted);
+  font-family: var(--gc-wizard-font);
+  font-size: 11px;
+}
+.sso-flow-arrow {
+  stroke: var(--gc-wizard-text-muted);
+  stroke-width: 1.5px;
+  fill: none;
+}
+.sso-flow-arrow--ok {
+  stroke: var(--gc-wizard-success);
+}
+.sso-flow-marker {
+  fill: var(--gc-wizard-text-muted);
+}
+.sso-flow-marker--ok {
+  fill: var(--gc-wizard-success);
 }

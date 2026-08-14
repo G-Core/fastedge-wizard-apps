@@ -17,11 +17,27 @@ var GcWizardShell = class extends HTMLElement {
   #btnBack = null;
   #btnNext = null;
   #mo = null;
+  #ro = null;
+  #stuckToBottom = true;
   connectedCallback() {
     if (!this.#indicator) this.#build();
+    this.#ro = new ResizeObserver(() => this.#followBottom());
+    this.#ro.observe(this);
+    window.addEventListener("scroll", this.#onScroll, { passive: true });
   }
   disconnectedCallback() {
     this.#mo?.disconnect();
+    this.#ro?.disconnect();
+    window.removeEventListener("scroll", this.#onScroll);
+  }
+  #onScroll = () => {
+    const doc = document.documentElement;
+    this.#stuckToBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+  };
+  #followBottom() {
+    if (this.#stuckToBottom) {
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "smooth" });
+    }
   }
   attributeChangedCallback(name) {
     if (!this.#navDiv) return;
@@ -92,6 +108,7 @@ var GcWizardShell = class extends HTMLElement {
   #show(index) {
     const steps = this.#steps();
     this.#current = index;
+    this.#stuckToBottom = true;
     steps.forEach((s, i) => {
       s.hidden = i !== index;
     });
