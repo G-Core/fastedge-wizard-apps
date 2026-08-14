@@ -83,7 +83,7 @@
 /* Deploy plan/progress/result rendering now comes from the step-kit
    (`.wizard-deploy*` via <gc-deploy-progress> / <DeployProgress>). */
 
-/* Profile A/B request-path diagrams (inline SVG in StepProfile). Colours come
+/* Variant A/B request-path diagrams (inline SVG in StepVariant). Colours come
    from these classes, never from attributes on the SVG elements themselves,
    so the CSS token-lint gate (which only scans .css files) actually covers them. */
 .totp-flow {

@@ -9,7 +9,7 @@ import { StepCdn } from './steps/StepCdn.jsx';
 import { StepRouting } from './steps/StepRouting.jsx';
 import { StepStore } from './steps/StepStore.jsx';
 import { StepSecrets } from './steps/StepSecrets.jsx';
-import { StepProfile } from './steps/StepProfile.jsx';
+import { StepVariant } from './steps/StepVariant.jsx';
 import { StepTotpSettings } from './steps/StepTotpSettings.jsx';
 import { StepBranding } from './steps/StepBranding.jsx';
 import { StepReview } from './steps/StepReview.jsx';
@@ -52,8 +52,8 @@ function Wizard({ session, ctx, filterT, appT }) {
         handoff: null,
         enroll: null,
         gcore: null,
-        // Profile A/B
-        profile: 'A',
+        // Variant A/B
+        variant: 'A',
         proofKey: null,
         proofTtl: '90',
         proofCookie: 'mfa_proof',
@@ -85,14 +85,14 @@ function Wizard({ session, ctx, filterT, appT }) {
         state: { status: 'idle', plan: null, progress: [], result: null, error: null },
     });
 
-    // Steps: 0 Overview · 1 Profile · 2 CDN · 3 Routing · 4 Store · 5 Secrets
+    // Steps: 0 Overview · 1 Variant · 2 CDN · 3 Routing · 4 Store · 5 Secrets
     //        6 TOTP settings · 7 Branding · 8 Review
     const canAdvance = useMemo(() => {
         switch (step) {
             case 0:
                 return !!f.name.trim();
             case 1:
-                return f.profile === 'A' || (f.profile === 'B' && !!f.proofKey);
+                return f.variant === 'A' || (f.variant === 'B' && !!f.proofKey);
             case 2:
                 return !!f.cdn;
             case 3:
@@ -159,8 +159,8 @@ function Wizard({ session, ctx, filterT, appT }) {
                   }
                 : {};
 
-        const profileBExtras =
-            f.profile === 'B'
+        const variantBExtras =
+            f.variant === 'B'
                 ? {
                       ...(f.proofTtl !== '90' ? { PROOF_TTL: f.proofTtl } : {}),
                       ...(f.proofCookie !== 'mfa_proof' ? { MFA_PROOF_COOKIE: f.proofCookie } : {}),
@@ -172,11 +172,11 @@ function Wizard({ session, ctx, filterT, appT }) {
             // binding KvStore.open("TOTP_USER_SEEDS") needs) — KV_STORE_ID here is only for
             // the write-via-API path, which the fastedge::kv binding can't do.
             KV_STORE_ID: String(f.store.id),
-            ...(f.profile === 'B' ? { MFA_PROOF_PUBLIC_JWK: f.proofKey.publicKey } : {}),
+            ...(f.variant === 'B' ? { MFA_PROOF_PUBLIC_JWK: f.proofKey.publicKey } : {}),
             ...totpEnv,
             ...policyEnv,
             ...brandEnv,
-            ...profileBExtras,
+            ...variantBExtras,
         };
 
         const appSecrets = {
@@ -184,7 +184,7 @@ function Wizard({ session, ctx, filterT, appT }) {
             HANDOFF_KEY: f.handoff.id,
             ENROLL_API_KEY: f.enroll.id,
             GCORE_API_TOKEN: f.gcore.id,
-            ...(f.profile === 'B' ? { MFA_PROOF_SIGNING_KEY: f.proofKey.id } : {}),
+            ...(f.variant === 'B' ? { MFA_PROOF_SIGNING_KEY: f.proofKey.id } : {}),
         };
 
         // Grants the app's fastedge::kv binding access to the selected store, under the
@@ -285,8 +285,8 @@ function Wizard({ session, ctx, filterT, appT }) {
                     appT={appT}
                 />
             </WizardStep>
-            <WizardStep title="Profile">
-                <StepProfile
+            <WizardStep title="Variant">
+                <StepVariant
                     session={session}
                     f={f}
                     set={set}

@@ -55,10 +55,10 @@ The launch template (id unknown at build time, name `SSO Wizard Launcher`) is ne
 
 No Edge Storage step — the source repo is explicit that KV is not used for config (too expensive per read); none of the six templates declare a `data_type: "store"` param.
 
-Everything above is created **eagerly** and referenced by id in the plan. The plan itself (`session.deployment.deploy(planParams, { onPlan, onProgress })`) creates the two apps + shared env, one `newCdnOrigins` (app origin), and two `newCdnRules`:
+Everything above is created **eagerly** and referenced by id in the plan. The plan itself (`session.deployment.deploy(planParams, { onPlan, onProgress })`) creates the two apps + shared env, one `newCdnOrigins` (app origin), and a `newCdnRules` set:
 
 - `app-route` — `^<authPrefix>` → routes the login/auth paths to the app origin.
-- `filter-rule` — `^/.*` (catch-all) with a `fastedgeFilter` attaching the proxy-wasm filter `on_request_headers`.
+- One or more filter rules, per the **Protection scope** choice on the Routing step (same pattern as edge-totp): `all` emits a single `filter-rule` (`^/.*` catch-all); `paths` emits one `filter-rule-<i>` per comma-separated protected path prefix (`^<escaped path>`). Every filter rule attaches the same proxy-wasm filter app via `fastedgeFilter` (`on_request_headers`). There is no default scope — the user must choose one before continuing.
 
 ## Variants
 
@@ -71,6 +71,8 @@ Everything above is created **eagerly** and referenced by id in the plan. The pl
 ## Providers
 
 The wizard collects one or more of Google / GitHub / Microsoft / Facebook / SAML, shared identically across all three variants (`StepProviders.jsx`). Each provider's client-id/secret is `mandatory: false` at the API level but is the de facto trigger for enabling that provider. If Microsoft is selected and left on the wildcard `MICROSOFT_TENANT` default, nudge the user toward setting `MICROSOFT_ALLOWED_TENANTS`.
+
+Google/Microsoft/Facebook each have a Redirect URI field, pre-filled on selection as `https://<cdn.cname><authPrefix>/callback/<provider>` (derived once the CDN resource and auth prefix are known — the auth app *is* the host, so the wizard already knows this value). The user can still edit it for a non-default callback path; the field is only left blank, and the corresponding `*_REDIRECT_URI` env var omitted, if they clear it. GitHub and SAML don't take a redirect URI param.
 
 ## Template config
 

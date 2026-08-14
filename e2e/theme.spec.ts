@@ -39,13 +39,14 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             734: { id: 734, api_type: 'wasi-http', name: 'TOTP - Challenge-Verify App', params: [] },
         },
     },
-    // edge-sso's launch template (737) is an inert placeholder — all 6 real
-    // templates are companions, split 3 variants x {auth-app, cdn-filter}. The
-    // wizard classifies each by name substring + api_type (never hard-coded id).
+    // edge-sso ships one auth-app + one cdn-filter pair, shared across all
+    // three variants — SSO_VARIANT (set by StepVariant) selects gate-only/
+    // cookie/header behavior at runtime. The wizard classifies each by
+    // api_type (never hard-coded id), same pattern as edge-totp above.
     'edge-sso': {
         context: {
-            launchTemplateId: 737,
-            companionTemplateIds: [738, 739, 740, 741, 742, 743],
+            launchTemplateId: 191,
+            companionTemplateIds: [194],
             theme: 'light',
             locale: 'en',
             feAppId: null,
@@ -53,12 +54,8 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             featureFlags: {},
         },
         templatesById: {
-            738: { id: 738, api_type: 'wasi-http', name: 'SSO - Gate-Only Auth App', params: [] },
-            739: { id: 739, api_type: 'proxy-wasm', name: 'SSO - Gate-Only CDN Filter', params: [] },
-            740: { id: 740, api_type: 'wasi-http', name: 'SSO - Cookie Auth App', params: [] },
-            741: { id: 741, api_type: 'proxy-wasm', name: 'SSO - Cookie CDN Filter', params: [] },
-            742: { id: 742, api_type: 'wasi-http', name: 'SSO - Header Auth App', params: [] },
-            743: { id: 743, api_type: 'proxy-wasm', name: 'SSO - Header CDN Filter', params: [] },
+            191: { id: 191, api_type: 'wasi-http', name: 'SSO - Auth App', params: [] },
+            194: { id: 194, api_type: 'proxy-wasm', name: 'SSO - CDN Filter', params: [] },
         },
     },
 };

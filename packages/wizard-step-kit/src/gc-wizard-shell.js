@@ -42,13 +42,34 @@ class GcWizardShell extends HTMLElement {
     #btnBack = null;
     #btnNext = null;
     #mo = null;
+    #ro = null;
+    #stuckToBottom = true;
 
     connectedCallback() {
         if (!this.#indicator) this.#build();
+        // Auto-follow growing step content (e.g. streaming deploy progress) the way a
+        // terminal/chat log does: keep the bottom in view, but only while the user hasn't
+        // scrolled away to reread something above.
+        this.#ro = new ResizeObserver(() => this.#followBottom());
+        this.#ro.observe(this);
+        window.addEventListener('scroll', this.#onScroll, { passive: true });
     }
 
     disconnectedCallback() {
         this.#mo?.disconnect();
+        this.#ro?.disconnect();
+        window.removeEventListener('scroll', this.#onScroll);
+    }
+
+    #onScroll = () => {
+        const doc = document.documentElement;
+        this.#stuckToBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+    };
+
+    #followBottom() {
+        if (this.#stuckToBottom) {
+            window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+        }
     }
 
     attributeChangedCallback(name) {
@@ -133,6 +154,7 @@ class GcWizardShell extends HTMLElement {
     #show(index) {
         const steps = this.#steps();
         this.#current = index;
+        this.#stuckToBottom = true;
         steps.forEach((s, i) => { s.hidden = i !== index; });
 
         this.#indicator.querySelectorAll('.wizard-step-btn').forEach((btn, i) => {

@@ -8,25 +8,57 @@
 
 ## Target templates
 
-| ID  | Name                        | api_type   | binary_id | Role                                    |
-|-----|-----------------------------|------------|-----------|------------------------------------------|
-| 737 | SSO Wizard Launcher         | proxy-wasm | 816191    | **Launch** — placeholder only, no params, exists only to carry `WIZARD_SOURCE_CONFIG` |
-| 738 | SSO - Gate-Only Auth App    | wasi-http  | 816233    | Companion — variant: gate-only           |
-| 739 | SSO - Gate-Only CDN Filter  | proxy-wasm | 816234    | Companion — variant: gate-only           |
-| 740 | SSO - Cookie Auth App       | wasi-http  | 816235    | Companion — variant: cookie              |
-| 741 | SSO - Cookie CDN Filter     | proxy-wasm | 816236    | Companion — variant: cookie              |
-| 742 | SSO - Header Auth App       | wasi-http  | 816237    | Companion — variant: header              |
-| 743 | SSO - Header CDN Filter     | proxy-wasm | 816247    | Companion — variant: header              |
+| ID  | Name                | api_type   | binary_id | Role                          |
+|-----|---------------------|------------|-----------|--------------------------------|
+| 748 | mySSO - CDN Filter  | proxy-wasm | 822162    | **Launch** — carries `WIZARD_SOURCE_CONFIG`, real params (not a placeholder) |
+| 747 | mySSO - Auth App    | wasi-http  | 822161    | Companion                     |
 
-> **Shape is unusual vs. edge-totp.** The launch template (737) is an inert
-> placeholder — `params: null`, `short_descr: "This is a place-holder to
-> attach the wizard too only.. Has no real data internals??"`. It exists
-> purely so a FastEdge template row exists to set `WIZARD_SOURCE_CONFIG` on.
-> The six real deployable templates (738–743) are **all** companions. The
-> wizard's first step is a variant picker (gate-only / cookie / header); after
-> that choice it uses only the two companion IDs matching the chosen variant
-> and ignores the other four. This "pick 2 of N companions" branch is new —
-> edge-totp had exactly one companion and no picker.
+> **Supersedes the previous 737/738–743 architecture below.** The wizard
+> implementation was consolidated after this doc was first written: instead
+> of 6 separate per-variant templates plus an inert 7th launch placeholder,
+> the shipped shape is **2 unified templates** (one auth-app, one CDN filter),
+> each parameterized by a single `SSO_VARIANT` enum (`gate-only` / `cookie` /
+> `header`) rather than by picking which of 6 template IDs to target. Both
+> 747 and 748 have real, non-empty `params` — neither is an inert
+> placeholder. 748 (CDN Filter) was confirmed as the launch template by the
+> user directly (a portal-UX choice, launching from the CDN side); 747 is its
+> sole companion. `WIZARD_SOURCE_CONFIG` on 748 sets
+> `companionTemplateIds: [747]`. The rest of this document (variant-picker
+> params, per-old-template-ID sections) describes the superseded design and
+> is kept for history — the "Params — mySSO" sections below reflect the
+> current live templates.
+
+## Params — mySSO - Auth App (id: 747, wasi-http)
+
+Same param set as the superseded id-738 section below, minus the four
+`*_API_BASE_URL`/`*_OAUTH_BASE_URL`/`*_API_VERSION`/`GOOGLE_JWKS_URL` naming
+being per-provider rather than grouped, plus the ES256 signing pair
+(`SESSION_SIGNING_KEY` / `SESSION_PUBLIC_JWK`, both `mandatory: false` now —
+required only when `SSO_VARIANT` is `cookie`, per param `descr`). All three
+variants (gate-only / cookie / header) are selected via the single
+`SSO_VARIANT` param (`mandatory: true`) instead of by choosing which template
+to deploy. `SESSION_SECRET` is `mandatory: true` here (used by every
+variant to sign OAuth/SAML flow cookies; also the HS256 signing key for
+gate-only/header). `SSO_AUDIENCE` is `mandatory: true`. Full provider
+(Google/GitHub/Microsoft/Facebook), SAML, and login-page-branding params are
+unchanged from the superseded id-738 section's description below.
+
+## Params — mySSO - CDN Filter (id: 748, proxy-wasm)
+
+| Param | data_type | mandatory | default | descr |
+|-------|-----------|-----------|---------|-------|
+| `SSO_AUDIENCE` | string | **true** | | Must equal the auth-app's value. Fail-closed. |
+| `SSO_VARIANT` | string | **true** | | `gate-only` / `cookie` / `header`. Must be identical to the auth-app's value. |
+| `SESSION_SECRET` | secret | false | | Required when `SSO_VARIANT` is `gate-only` or `header`. Must equal the auth-app's value. |
+| `SESSION_PUBLIC_JWK` | string | false | | Required when `SSO_VARIANT` is `cookie`. Must be the exact public counterpart of the auth-app's `SESSION_SIGNING_KEY`. |
+| `SSO_ISSUER` | string | false | | Must match auth-app if set. |
+| `AUTH_PREFIX` | string | false | `/auth` | Path prefix the filter bypasses. Must align with the CDN rule routing this prefix to the auth-app. |
+| `LOGIN_PAGE_URL` | string | false | `AUTH_PREFIX/` | Redirect target for unauthenticated users. |
+| `SESSION_COOKIE` | string | false | `sso_session` | Must match the auth-app. |
+
+---
+
+## Superseded design (737/738–743) — kept for history only
 
 ## Params — SSO - Gate-Only Auth App (id: 738, wasi-http)
 
@@ -133,14 +165,19 @@ Per `context/architecture/overview.md` §"Cross-domain — Option 3 (single doma
 - The filter's `AUTH_PREFIX` value and the CDN rule's routed prefix must be the same string — this is a wizard-authored CDN rule, not a template param, so the wizard must write it consistently when it creates the rule.
 - IdP OAuth/SAML callback and ACS URLs are registered against this single CDN domain (`CANONICAL_HOST`) — stable across redeploys.
 
-## Profile / variant branches
+## Profile / variant branches (current: single companion pair, `SSO_VARIANT` param)
 
-This is the central branch of the wizard — a genuine "whether to collect" decision, not a pick-vs-create the SDK already removes:
+> Note: this section originally described picking 2-of-6 companion template
+> IDs. That's superseded — there is now exactly one companion pair (747 +
+> 748, from `context.get().companionTemplateIds`), and the variant choice is
+> written as the `SSO_VARIANT` param value on both, not as a template
+> selection. The functional branches below (provider selection, cookie-only
+> keypair step, branding) are unchanged.
 
-1. **Variant picker** (first step): gate-only / cookie / header. Determines which 2 of the 6 companion template IDs (from `context.get().companionTemplateIds`) the wizard uses for the rest of the flow. The other 4 are ignored entirely for this session.
-   - gate-only → templates 738 (auth-app) + 739 (filter). Delivers nothing to origin; only pass/fail.
-   - cookie → templates 740 (auth-app) + 741 (filter). Delivers a verifiable ES256 JWT cookie.
-   - header → templates 742 (auth-app) + 743 (filter). Delivers `x-sso-*` headers; same HS256 signing as gate-only.
+1. **Variant picker** (first step): gate-only / cookie / header. Sets `SSO_VARIANT` identically on both 747 (auth-app) and 748 (CDN filter).
+   - gate-only → HS256 via shared `SESSION_SECRET`. Delivers nothing to origin; only pass/fail.
+   - cookie → ES256 via `SESSION_SIGNING_KEY` (747) / `SESSION_PUBLIC_JWK` (both). Delivers a verifiable JWT cookie.
+   - header → HS256 via shared `SESSION_SECRET`, same as gate-only. Delivers `x-sso-*` headers to origin.
 2. **Provider selection** (per variant, same for all three): user picks one or more of Google / GitHub / Microsoft / Facebook / SAML. Each selected provider makes its client-id/secret (and, for SAML, the IdP_* block) required in practice even though the API marks them `mandatory: false` — this is the fail-closed-in-practice case the intake instructions call out explicitly.
    - If Microsoft is selected and `MICROSOFT_TENANT` is left as the wildcard default (`common`/`organizations`/`consumers`), the wizard should nudge the user toward setting `MICROSOFT_ALLOWED_TENANTS` (security-relevant default called out in the param `descr` itself).
 3. **cookie-only sub-step**: generate the ES256 keypair (`secrets.generateKeypair`) instead of the random-bytes secret used by the other two variants.
@@ -148,22 +185,19 @@ This is the central branch of the wizard — a genuine "whether to collect" deci
 
 ## Notes
 
-- Template 737 ("SSO Wizard Launcher") returned `params: null` and an
-  intentionally throwaway `short_descr` ("Has no real data internals??") — confirmed
-  with the user this is deliberate: it exists solely to host
-  `WIZARD_SOURCE_CONFIG` so the portal has a template row to launch the wizard
-  from. The wizard must never write params to 737 itself; all real app creation
-  targets the two companion templates matching the chosen variant.
-- All six real templates were fetched live via `fastedge.templates.read` (API
-  status 200 each) — no `long_descr` was set on any of them (empty string);
-  every constraint above comes from per-param `descr` text plus the source
-  repo's `context/architecture/overview.md` and `context/design/integration.md`.
-- Source repo was available and used for cross-app constraint reconciliation
-  (`context/architecture/overview.md`, `context/architecture/auth-modes.md`,
-  `context/design/integration.md`). No API/source conflicts found — the API
-  param `descr` text and the source docs agree throughout, which is unlike
-  edge-totp's `registry.json` ID drift; there is no such drift artifact here.
-- The three variants deliberately share almost all code (`core/` reused across
-  all six templates) — the wizard experience should mirror that: one shared
-  provider-selection UI, branching only at (a) which 2 template IDs to target
-  and (b) the signing-key step (random bytes vs. keypair).
+- **Superseded (2026-08-13):** the 737/738–743 seven-template architecture
+  described above was never shipped as-is. The live templates are 747
+  (auth-app) and 748 (CDN filter) — confirmed live via
+  `GET /fastedge/v1/template/{747,748}` (API status 200 each) during
+  `/wizard-publish`. Both have real, non-empty `params` (no inert
+  placeholder template exists in the current design). 748 is the launch
+  template (carries `WIZARD_SOURCE_CONFIG`, `companionTemplateIds: [747]`),
+  confirmed directly by the user as a portal-UX choice (launching from the
+  CDN side) rather than something documented anywhere in template metadata.
+  The variant choice (gate-only / cookie / header) is now a single
+  `SSO_VARIANT` param value written identically to both templates, not a
+  template-selection decision — there is no more "which 2 of 6 companion IDs"
+  branch.
+- All prior-note claims about `core/` code sharing across six templates and
+  the "pick 2 of N companions" wizard step describe the superseded design;
+  treat the "Superseded design" section above as historical only.

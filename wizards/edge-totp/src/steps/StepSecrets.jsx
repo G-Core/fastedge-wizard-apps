@@ -3,6 +3,9 @@ import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 
 export function StepSecrets({ session, f, set }) {
+    const generatedElsewhere = f.variant === 'B'
+        ? ` Variant B also uses a fifth — the ES256 proof key — which you already generated back in the Variant step; it is not listed here.`
+        : '';
     const [busy, setBusy] = useState('');
     // Wizard-defined HS256 keys → pickOrCreate({ bytes }): the host picker lets the user generate a
     // fresh 32-byte value OR reuse a secret a prior run created (rename-safe — picked from the live
@@ -40,7 +43,7 @@ export function StepSecrets({ session, f, set }) {
                 check to this app (<strong>handoff key</strong>), one gates who can enrol a user
                 (<strong>enroll API key</strong>), and one lets this app read/write the seed store
                 (<strong>Gcore API token</strong>). Generate each below — the session key is
-                <strong> shared</strong>, created once and bound to both apps.
+                <strong> shared</strong>, created once and bound to both apps.{generatedElsewhere}
             </p>
             <ResourceRow title="Session signing key (shared)"
                 sub="HS256, edge-internal. App signs mfa_session; filter verifies it." set={!!f.sessionKey}

@@ -22,8 +22,10 @@ export function StepOverview({ f, set }) {
             </Note>
             <Note kind="warn">
                 Both apps must share one CDN host so the session cookie is first-party. The
-                filter <strong>fail-closes</strong>: if the shared audience is missing it rejects
-                every request. This wizard keeps the shared values in sync for you.
+                filter <strong>fail-closes</strong>: get the shared audience value wrong or leave
+                it blank, and it rejects every request — including the ones coming back from a
+                successful login, so visitors see an endless redirect loop to the login page
+                rather than a clean error. This wizard keeps the shared values in sync for you.
             </Note>
             <Field label="Deployment name" value={f.name} onChange={(v) => set({ name: v })}
                 hint="Used to name the two apps, the origin, and the CDN rules (e.g. sso-app, sso-filter)." />

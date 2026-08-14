@@ -5,16 +5,16 @@ import { ResourceRow } from '@gcore/wizard-step-kit/react';
 import { Field } from '../components.jsx';
 
 // The full request-time gate, including the challenge round trip. Duplicated
-// per profile (rather than shared) so each panel can highlight its own
+// per variant (rather than shared) so each panel can highlight its own
 // difference directly on the diagram — the "valid" arrow and the Origin box
 // are the only two things that actually change between A and B; everything
-// above them is identical (the Rust filter has no concept of "profile" at
+// above them is identical (the Rust filter has no concept of "variant" at
 // all, see otp-filter/src/lib.rs: it checks mfa_session on every request
 // either way). Vertical, not horizontal: the gap between stacked boxes gives
 // label text the full canvas width instead of the few px between side-by-side
 // boxes. Colours live in styles.css (.totp-flow-*), never as attributes here,
 // so the CSS token-lint gate covers them.
-function ProfileADiagram() {
+function VariantADiagram() {
     return (
         <svg className="totp-flow" viewBox="0 0 460 480" role="img"
             aria-label="Browser requests a protected path. The CDN edge filter checks for an mfa_session cookie; if missing, it redirects to the challenge page. The user enters a code there, which sets mfa_session and retries the original request. The edge filter checks again — if valid, the request reaches your origin; if still invalid or missing, the edge blocks it with a 401 and your origin never sees it.">
@@ -58,12 +58,12 @@ function ProfileADiagram() {
     );
 }
 
-// Same gate as Profile A, down to the same 401 branch — only the "valid"
+// Same gate as Variant A, down to the same 401 branch — only the "valid"
 // arrow and the Origin box differ, called out directly on the diagram.
-function ProfileBDiagram() {
+function VariantBDiagram() {
     return (
         <svg className="totp-flow" viewBox="0 0 460 530" role="img"
-            aria-label="Same gate as Profile A up through the challenge and retry. This time the retry also carries a one-time mfa_proof. If the edge filter finds a valid mfa_session, the request reaches your origin with that proof attached; your origin verifies it via JWKS and mints its own session with whatever lifetime it chooses. If the session is still invalid or missing, the edge blocks it with a 401, same as Profile A.">
+            aria-label="Same gate as Variant A up through the challenge and retry. This time the retry also carries a one-time mfa_proof. If the edge filter finds a valid mfa_session, the request reaches your origin with that proof attached; your origin verifies it via JWKS and mints its own session with whatever lifetime it chooses. If the session is still invalid or missing, the edge blocks it with a 401, same as Variant A.">
             <defs>
                 <marker id="totp-gate-b-neutral" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
                     <path d="M0,0 L8,4 L0,8 Z" className="totp-flow-marker" />
@@ -102,18 +102,18 @@ function ProfileBDiagram() {
             <text x="100" y="490" textAnchor="middle" className="totp-flow-text--muted">(any TTL)</text>
             <line x1="180" y1="342" x2="270" y2="342" className="totp-flow-arrow totp-flow-arrow--blocked" markerEnd="url(#totp-gate-b-blocked)" />
             <text x="280" y="338" className="totp-flow-text--muted">invalid / missing</text>
-            <text x="280" y="354" className="totp-flow-text--blocked">401 — same as Profile A</text>
+            <text x="280" y="354" className="totp-flow-text--blocked">401 — same as Variant A</text>
         </svg>
     );
 }
 
-export function StepProfile({ session, f, set }) {
+export function StepVariant({ session, f, set }) {
     const [busy, setBusy] = useState(false);
     async function genKeypair() {
         setBusy(true);
         try {
             const r = await optional(() => session.fastedge.secrets.generateKeypair({
-                name: `${f.name}-proof-key`, comment: 'ES256 proof signing key (Profile B)', algorithm: 'ES256',
+                name: `${f.name}-proof-key`, comment: 'ES256 proof signing key (Variant B)', algorithm: 'ES256',
             }));
             if (r) set({ proofKey: r });
         } catch (err) {
@@ -124,14 +124,14 @@ export function StepProfile({ session, f, set }) {
     }
     return (
         <>
-            <h2 tabIndex={-1}>Enforcement profile</h2>
+            <h2 tabIndex={-1}>Enforcement variant</h2>
             <p className="totp-lede">This controls <strong>who checks that MFA passed</strong> — the
-                CDN edge, or your origin server. Both profiles run the same challenge/verify loop
+                CDN edge, or your origin server. Both variants run the same challenge/verify loop
                 shown below; this only changes what happens after a user enters a correct code —
                 highlighted on each diagram.</p>
-            <OptionalPanels onChange={(sel) => set({ profile: sel[0] || '' })}>
-                <WizardPanel value="A" label="Profile A — edge enforces (recommended)">
-                    <ProfileADiagram />
+            <OptionalPanels onChange={(sel) => set({ variant: sel[0] || '' })}>
+                <WizardPanel value="A" label="Variant A — edge enforces (recommended)">
+                    <VariantADiagram />
                     <p>The CDN blocks any request to a protected path unless it carries a valid
                         MFA session cookie — your origin never sees a request that hasn&apos;t
                         passed MFA, and doesn&apos;t need to check anything itself. This is the
@@ -142,9 +142,9 @@ export function StepProfile({ session, f, set }) {
                         CDN resource (no direct IP/hostname access) — otherwise a request can skip
                         the edge check entirely and reach your origin unverified.</p>
                 </WizardPanel>
-                <WizardPanel value="B" label="Profile B — origin verifies a signed proof">
-                    <ProfileBDiagram />
-                    <p>The CDN edge gate is <strong>unchanged from Profile A</strong> — same
+                <WizardPanel value="B" label="Variant B — origin verifies a signed proof">
+                    <VariantBDiagram />
+                    <p>The CDN edge gate is <strong>unchanged from Variant A</strong> — same
                         <code> mfa_session</code> check, same 401 on a protected path. On top of
                         that, the app hands your origin a signed, one-time token (like a JWT)
                         proving MFA passed for a specific user. Your origin checks that signature

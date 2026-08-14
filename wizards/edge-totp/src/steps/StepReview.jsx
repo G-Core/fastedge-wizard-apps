@@ -24,10 +24,10 @@ export function StepReview({ f, deploy, filterT, appT }) {
                 <dt>MFA audience</dt><dd>{f.audience}</dd>
                 <dt>Session cookie</dt><dd>{f.cookie}{f.issuer ? ` · issuer ${f.issuer}` : ''}</dd>
                 <dt>Edge Storage</dt><dd>{f.store?.name} (#{f.store?.id})</dd>
-                <dt>Secrets</dt><dd>session key, handoff key, enroll key, Gcore API token{f.profile === 'B' ? ', ES256 proof key' : ''}</dd>
-                <dt>Profile</dt><dd>{f.profile === 'B' ? 'B — origin verifies ES256 proof' : 'A — edge enforces'}</dd>
-                {f.profile === 'B' && f.proofTtl !== '90' && <><dt>Proof TTL</dt><dd>{f.proofTtl}s</dd></>}
-                {f.profile === 'B' && f.proofCookie !== 'mfa_proof' && <><dt>Proof cookie</dt><dd>{f.proofCookie}</dd></>}
+                <dt>Secrets</dt><dd>session key, handoff key, enroll key, Gcore API token{f.variant === 'B' ? ', ES256 proof key' : ''}</dd>
+                <dt>Variant</dt><dd>{f.variant === 'B' ? 'B — origin verifies ES256 proof' : 'A — edge enforces'}</dd>
+                {f.variant === 'B' && f.proofTtl !== '90' && <><dt>Proof TTL</dt><dd>{f.proofTtl}s</dd></>}
+                {f.variant === 'B' && f.proofCookie !== 'mfa_proof' && <><dt>Proof cookie</dt><dd>{f.proofCookie}</dd></>}
                 {f.totpMode === 'custom' && <>
                     <dt>TOTP issuer</dt><dd>{f.totpIssuer}</dd>
                     <dt>TOTP config</dt><dd>{f.totpDigits} digits · {f.totpPeriod}s · {f.totpAlgo} · ±{f.totpDrift} steps</dd>
@@ -49,7 +49,7 @@ export function StepReview({ f, deploy, filterT, appT }) {
 
             <DeployProgress state={d} />
 
-            {d.result?.status === 'complete' && f.profile === 'B' &&
+            {d.result?.status === 'complete' && f.variant === 'B' &&
                 <div className="totp-lede">
                     <p>MFA is now set up. To integrate your origin with the challenge/verify flow:</p>
                     <ul>

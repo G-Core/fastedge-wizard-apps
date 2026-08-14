@@ -1,5 +1,5 @@
 /* Pull in step-kit component styles (bundled by esbuild — no runtime fetch). */
-@import url("@gcore/wizard-step-kit/styles");
+@import url('@gcore/wizard-step-kit/styles');
 
 /* Wizard-specific layout and variants only.
    Base element styles (button, input, h1…) come from /styles/v1/wizard.css —
@@ -37,6 +37,46 @@
     margin-top: 0.25rem;
 }
 
+/* Claims checklist (StepSigning) — deliberately its own class rather than
+   reusing .sso-field, whose `input { width: 100% }` rule is meant for text
+   inputs and stretches a checkbox into a full-width block, pushing its label
+   onto the next line. */
+.sso-checklist {
+    display: block;
+    margin-bottom: 1rem;
+    max-width: 60ch;
+    border: 0;
+    padding: 0;
+}
+
+.sso-checklist > span:first-child {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.sso-checkbox {
+    /* The base wizard stylesheet resets all <label> elements to
+       `display: flex; flex-direction: column` for the standard
+       text-above-input field pattern. flex-direction isn't set by any
+       property below, so without this override that base rule's `column`
+       would still win the cascade (per-property, not per-rule) even though
+       this class beats the bare `label` selector on specificity. */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 400;
+    font-size: inherit;
+    color: inherit;
+    margin: 0.25rem 0;
+}
+
+.sso-checkbox input {
+    width: auto;
+    flex: none;
+}
+
 /* Callout boxes for guidance / fail-closed warnings. */
 .sso-note {
     border: 1px solid var(--gc-wizard-border);
@@ -48,11 +88,17 @@
     font-size: 0.875rem;
 }
 
-.sso-note--warn { border-left-color: var(--gc-wizard-warning); }
+.sso-note--warn {
+    border-left-color: var(--gc-wizard-warning);
+}
 
-.sso-note--info { border-left-color: var(--gc-wizard-info); }
+.sso-note--info {
+    border-left-color: var(--gc-wizard-info);
+}
 
-.sso-note--danger { border-left-color: var(--gc-wizard-danger); }
+.sso-note--danger {
+    border-left-color: var(--gc-wizard-danger);
+}
 
 /* Resource / picker rows come from the step-kit (`.wizard-row*`, imported
    via @gcore/wizard-step-kit/styles at the top of this file). */
@@ -78,3 +124,50 @@
 
 /* Deploy plan/progress/result rendering comes from the step-kit
    (`.wizard-deploy*` via <gc-deploy-progress> / <DeployProgress>). */
+
+/* Per-variant request-path diagrams (inline SVG in StepVariant). Colours come
+   from these classes, never from attributes on the SVG elements themselves,
+   so the CSS token-lint gate (which only scans .css files) actually covers them. */
+.sso-flow {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0.5rem 0 1rem;
+}
+
+.sso-flow-box {
+    fill: var(--gc-wizard-surface);
+    stroke: var(--gc-wizard-border);
+    stroke-width: 1.5px;
+}
+
+.sso-flow-text {
+    fill: var(--gc-wizard-text);
+    font-family: var(--gc-wizard-font);
+    font-size: 13px;
+}
+
+.sso-flow-text--muted {
+    fill: var(--gc-wizard-text-muted);
+    font-family: var(--gc-wizard-font);
+    font-size: 11px;
+}
+
+.sso-flow-arrow {
+    stroke: var(--gc-wizard-text-muted);
+    stroke-width: 1.5px;
+    fill: none;
+}
+
+.sso-flow-arrow--ok {
+    stroke: var(--gc-wizard-success);
+}
+
+.sso-flow-marker {
+    fill: var(--gc-wizard-text-muted);
+}
+
+.sso-flow-marker--ok {
+    fill: var(--gc-wizard-success);
+}
