@@ -44,24 +44,18 @@ cd FastEdge-Wizard-apps
 
 **Step zero — understand your target template first:**
 
-Before copying a wizard template, run `/wizard-intake` (Claude Code skill) from
-the `fastedge-wizard-apps/` directory. It fetches the full param list for your
-target template(s) from the Gcore API and writes
-`wizards/<customer-name>-<account-id>/<name>/TARGET.md` (`wizards/gcore/<name>/`
-if this is a G-Core-owned wizard) — a
-durable brief with the param table, cross-app constraints, secrets/store needs,
-and CDN wiring. Later build steps and any hand-off agent reason against this
-file instead of rediscovering everything.
+Before writing wizard logic, get the full param list for your target template(s)
+from the Gcore API. The fastest way is to call
+`session.fastedge.templates.read({ id })` from a sandbox or to ask the Gcore team
+to share the param table for your template. If you have Gcore portal access and
+Claude Code, the `/wizard-intake` skill automates this: it fetches params via the
+API and writes a `TARGET.md` brief in your wizard directory (do not commit it —
+it contains account-scoped IDs).
 
-If you have a local clone of the template's source repo, pass it as the source
-path — the skill reads the README and `context/` docs for constraint prose the
-API doesn't expose. Without a source repo, the skill falls back to the API's
-`long_descr` and param `descr` fields.
-
-```bash
-# from fastedge-wizard-apps/:
-/wizard-intake   # prompts for wizard name, template ids, and optional source path
-```
+Either way, the output you need before continuing is: every param name, its
+`data_type`, whether it is `mandatory`, its `default_value`, any `metadata`
+constraints (`shared_across_apps`, `conditional-required`), and which app in a
+multi-app wizard owns it. See §3 for how to read and use this information.
 
 Pick a starting template:
 
@@ -118,9 +112,8 @@ If you do **not** have portal access, hand-craft fixtures from the template's RE
 Before writing wizard logic, understand the template you are deploying. Every
 constraint you miss here becomes a hard-coded assumption or a silent breakage.
 
-If you ran `/wizard-intake` in §2 above, you already have
-`wizards/<customer-name>-<account-id>/<name>/TARGET.md` — start there. It has the param table, cross-app constraints, secrets/store needs,
-and CDN wiring derived from the live API.
+Before writing wizard logic, make sure you have the param table from §2. The
+param list is the document you reason against for the rest of this section.
 
 **The param source of truth is `fastedge.templates.read` (live API) + the
 template's own README/docs — never `registry.json`.** That file is a CI/CD
@@ -135,12 +128,9 @@ prose descriptions can lag behind the code; the actual `params` array returned b
 secret. If you spot a contradiction, note it as a bug in the template source repo
 — but code against the param list, not the prose.
 
-**How to inspect params (if you skipped wizard-intake):**
-
-Run `/sync-wizard-fixtures` (Claude Code skill) from your wizard directory with
-`templates` selected — it fetches the full param list from the live portal
-(including `metadata`) and writes it to `fixtures/fastedge/templates.json`. Open
-that file and read every param:
+**Reading the param list — what to look for:** open `fixtures/fastedge/templates.json`
+(written by `/sync-wizard-fixtures` if you have portal access, or hand-crafted from
+the template README) and check every param:
 
 - Which params have `"data_type": "secret"` or `"data_type": "store"`? Note: params
   that hold an Edge Storage id or name are often typed `"string"` (e.g. `KV_STORE_ID`,
@@ -149,10 +139,9 @@ that file and read every param:
 - Are there params that must match across multiple apps? (See `context/PARAM_CONSTRAINTS.md`.)
 - Does the template have a profile/variant concept (e.g. Profile A vs B) that changes which params are needed?
 
-For multi-template wizards: run `/sync-wizard-fixtures` with **all** target
-templates selected. Params marked `shared_across_apps` in their `metadata` must
-carry the same value on every app — the wizard collects them once and binds
-everywhere.
+For multi-template wizards: make sure you have the param list for **all** target
+templates. Params marked `shared_across_apps` in their `metadata` must carry the
+same value on every app — the wizard collects them once and binds everywhere.
 
 **Edge Storage binding pattern** — if an app needs a store id or name in its env:
 

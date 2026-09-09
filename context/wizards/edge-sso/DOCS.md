@@ -46,12 +46,12 @@ On connect, the wizard reads `ctx.launchTemplateId` + `ctx.companionTemplateIds`
 
 ## Resources it creates
 
-| Resource | SDK call | Notes |
-|---|---|---|
-| `SESSION_SECRET` | `secrets.pickOrCreate({ name, bytes: 32 })` | gate-only/header only. Bound as `secretRefs.SESSION_SECRET` on **both** app and filter (shared HMAC key). |
-| `SESSION_SIGNING_KEY` + `SESSION_PUBLIC_JWK` | `secrets.generateKeypair({ name, algorithm: 'ES256' })` | cookie variant only. Private half → app `secretRefs.SESSION_SIGNING_KEY`; public JWK → plain `env.SESSION_PUBLIC_JWK` on **both** app and filter. Even in this variant the app still gets `secretRefs.SESSION_SECRET` (signs OAuth/SAML flow cookies) — the filter does not, since it verifies via the public JWK only. |
-| Provider secrets (`GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_SECRET`, `MICROSOFT_CLIENT_SECRET`, `FACEBOOK_CLIENT_SECRET`, `IDP_CERT`) | `secrets.pickOrCreate()` | User-brought — pasted external OAuth client secret / SAML IdP cert, one per selected provider. |
-| CDN resource | `cdn.resources.pick()` | the delivery domain to wire onto |
+| Resource                                                                                                                           | SDK call                                                | Notes                                                                                                                                                                                                                                                                                                                   |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SESSION_SECRET`                                                                                                                   | `secrets.pickOrCreate({ name, bytes: 32 })`             | gate-only/header only. Bound as `secretRefs.SESSION_SECRET` on **both** app and filter (shared HMAC key).                                                                                                                                                                                                               |
+| `SESSION_SIGNING_KEY` + `SESSION_PUBLIC_JWK`                                                                                       | `secrets.generateKeypair({ name, algorithm: 'ES256' })` | cookie variant only. Private half → app `secretRefs.SESSION_SIGNING_KEY`; public JWK → plain `env.SESSION_PUBLIC_JWK` on **both** app and filter. Even in this variant the app still gets `secretRefs.SESSION_SECRET` (signs OAuth/SAML flow cookies) — the filter does not, since it verifies via the public JWK only. |
+| Provider secrets (`GOOGLE_CLIENT_SECRET`, `GITHUB_CLIENT_SECRET`, `MICROSOFT_CLIENT_SECRET`, `FACEBOOK_CLIENT_SECRET`, `IDP_CERT`) | `secrets.pickOrCreate()`                                | User-brought — pasted external OAuth client secret / SAML IdP cert, one per selected provider.                                                                                                                                                                                                                          |
+| CDN resource                                                                                                                       | `cdn.resources.pick()`                                  | the delivery domain to wire onto                                                                                                                                                                                                                                                                                        |
 
 No Edge Storage step — the source repo is explicit that KV is not used for config (too expensive per read); neither template declares a `data_type: "store"` param.
 
@@ -72,17 +72,17 @@ Everything above is created **eagerly** and referenced by id in the plan. The pl
 
 The wizard collects one or more of Google / GitHub / Microsoft / Facebook / SAML, shared identically across all three variants (`StepProviders.jsx`). Each provider's client-id/secret is `mandatory: false` at the API level but is the de facto trigger for enabling that provider. If Microsoft is selected and left on the wildcard `MICROSOFT_TENANT` default, nudge the user toward setting `MICROSOFT_ALLOWED_TENANTS`.
 
-Google/Microsoft/Facebook each have a Redirect URI field, pre-filled on selection as `https://<cdn.cname><authPrefix>/callback/<provider>` (derived once the CDN resource and auth prefix are known — the auth app *is* the host, so the wizard already knows this value). The user can still edit it for a non-default callback path; the field is only left blank, and the corresponding `*_REDIRECT_URI` env var omitted, if they clear it. GitHub and SAML don't take a redirect URI param.
+Google/Microsoft/Facebook each have a Redirect URI field, pre-filled on selection as `https://<cdn.cname><authPrefix>/callback/<provider>` (derived once the CDN resource and auth prefix are known — the auth app _is_ the host, so the wizard already knows this value). The user can still edit it for a non-default callback path; the field is only left blank, and the corresponding `*_REDIRECT_URI` env var omitted, if they clear it. GitHub and SAML don't take a redirect URI param.
 
 ## Template config
 
-Two templates total: "SSO - CDN Filter" (`proxy-wasm`, template id 194 — the launch template) and "SSO - Auth App" (`wasi-http`, template id 191 — its sole companion). The launch template carries `WIZARD_SOURCE_CONFIG` with the auth-app's id:
+Two templates total: "SSO - CDN Filter" (`proxy-wasm`, the launch template) and "SSO - Auth App" (`wasi-http`, its sole companion). The launch template carries `WIZARD_SOURCE_CONFIG` with the auth-app's template id (account-scoped — resolve via `fastedge.templates.read` for the target account, not hard-coded here):
 
 ```
-WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"edge-sso","cdn":"jsdelivr","companionTemplateIds":[191]}
+WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"edge-sso","cdn":"jsdelivr","companionTemplateIds":[<auth-app-template-id>]}
 ```
 
-Source of truth for both templates' params lives in `fastedge-coordinator/FastEdge-templates/edge-sso/{auth-app,cdn-filter}/registry.json`.
+Source of truth for both templates' params lives in [FastEdge-templates/edge-sso](https://github.com/G-Core/FastEdge-templates/tree/main/edge-sso).
 
 ## Fixtures & e2e
 
