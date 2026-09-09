@@ -1,3 +1,17 @@
+# IMPORTANT — fork PR security (public repo)
+#
+# This workflow runs on `pull_request`, which means it executes contributed code
+# (pnpm run build, pnpm test:e2e) on our runners for every fork PR. To prevent
+# runner abuse (crypto mining, etc.) from arbitrary contributors, you MUST enable:
+#
+#   Repo → Settings → Actions → General
+#   → "Fork pull request workflows from outside collaborators"
+#   → "Require approval for all outside collaborators"
+#
+# Without that setting, any actor can fork this repo, open a PR, and trigger a
+# runner job immediately. With it, a maintainer must approve before any job runs.
+# `permissions: contents: read` below limits the GITHUB_TOKEN scope as defence-in-depth,
+# but it does NOT prevent jobs from starting — the Settings gate is the primary control.
 name: Wizard checks
 
 permissions:
