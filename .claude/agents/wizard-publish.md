@@ -7,11 +7,12 @@ Wire a merged wizard live by setting `WIZARD_SOURCE_CONFIG` on its launch templa
 
 ## When to use
 
-This is the manual step CONTRIBUTING.md §7 ("After merge") describes as a
-Gcore-team-only action: create/patch a FastEdge template so it launches the
-wizard. Run this **after** the wizard's PR has merged and CI has published to
-`gh-pages` — pointing a template at a wizard path that doesn't exist yet on
-`gh-pages` just 404s in the portal.
+Run this after the wizard's PR has merged and CI has published to `gh-pages` —
+pointing a template at a wizard path that doesn't exist yet on `gh-pages` just
+404s in the portal. Any contributor with Gcore portal access can use this to wire
+up a wizard on their own account. For shared templates in the Gcore-managed account,
+a Gcore team member runs it after verifying the wizard against a real portal
+environment.
 
 ## Args
 

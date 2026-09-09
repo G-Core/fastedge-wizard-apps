@@ -18,7 +18,47 @@ wizards from ever colliding under `release/` or in a template's `wizardDir`.
 The one exception is `wizards/gcore/` — G-Core's own wizards, no account-id
 suffix, since it's this repo's own namespace rather than a customer account.
 
-The part that matters for submission: **merging does not make a wizard live.** After a wizard merges, the Gcore team creates a FastEdge template that points to it via `WIZARD_SOURCE_CONFIG` — that publish step is what surfaces it in the portal.
+The part that matters for submission: **merging does not make a wizard live.** After a wizard merges, a FastEdge template must be configured to point at it via `WIZARD_SOURCE_CONFIG` — that publish step is what surfaces it in the portal. You can do this yourself on your own account (see §7); for a shared template in the Gcore-managed account, the Gcore team handles it.
+
+---
+
+## How your fork can serve wizards (and where it cannot)
+
+Wizards from your fork load in the portal only for **templates you own**. This is
+intentional: code that has not been reviewed by the Gcore team is never trusted to serve
+a wizard to a recipient of a shared template. Once your PR merges to `main`, your wizard
+is published to `gh-pages` and can serve shared templates too (Gcore wires this up in
+§7).
+
+### Preview testing in the portal before your PR merges
+
+You can test your wizard end-to-end in a real portal environment before opening a PR.
+The three workflow files below handle the full preview lifecycle — copy all of them into
+your fork's `.github/workflows/` directory:
+
+| File | What it does |
+|---|---|
+| `preview-deploy.yml` | Builds all wizards on every push and publishes to `preview/<branch>` in your fork via jsDelivr |
+| `preview-cleanup.yml` | Deletes `preview/<branch>` the moment its source branch is deleted (e.g. after a PR merge) |
+| `preview-sweep.yml` | Weekly backstop — removes any `preview/*` branch whose source branch is gone or has been idle for 90+ days |
+
+Copy all three, not just the deploy workflow. Without the cleanup pair, orphaned
+`preview/*` branches accumulate in your fork indefinitely.
+
+**One-time allowlist request:** the wizard proxy only fetches from approved repos. Open
+an issue in this repo titled `[Preview allowlist] <your-org>/FastEdge-Wizard-apps` and
+include your GitHub org and a brief description of the wizard you are building. Gcore
+will add your fork to the allowlist — this is a one-time step per org.
+
+Once the allowlist entry is in place, point your template's `WIZARD_SOURCE_CONFIG` at
+your fork:
+
+```
+WIZARD_SOURCE_CONFIG={"repo":"<your-org>/FastEdge-Wizard-apps","ref":"preview/<branch>","wizardDir":"<your-wizard-dir>","cdn":"jsdelivr"}
+```
+
+This only works for templates **you own**. Shared templates are always blocked from fork
+refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`.
 
 ---
 
@@ -307,12 +347,16 @@ Both must pass before merge.
 
 CI builds all wizards and force-pushes built output to the `gh-pages` branch. jsDelivr picks it up within minutes (CI purges the cache after publish).
 
-The wizard is not yet live in the portal. The Gcore team then:
-1. Runs `/wizard-publish` to set `WIZARD_SOURCE_CONFIG` (and `companionTemplateIds`,
-   for a multi-app wizard) on the launch FastEdge template via the Gcore API
-2. Verifies it against a real portal environment
+The wizard is not yet live in the portal — a FastEdge template must be configured to
+point at it. **If you have Gcore portal access and Claude Code**, run `/wizard-publish`
+from this repo: it fetches your launch template, builds the correct `WIZARD_SOURCE_CONFIG`
+value, and patches the template via the API. It works for any template on your account.
 
-Once the template is published, the wizard is live.
+If you need a **shared template** (visible to all portal users) wired up, reach out to
+the Gcore team — they run the same `/wizard-publish` step on the Gcore-managed account
+after verifying the wizard against a real portal environment.
+
+Once the template is configured, the wizard is live.
 
 ---
 
