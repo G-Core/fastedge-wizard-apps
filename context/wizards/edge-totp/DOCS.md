@@ -64,7 +64,7 @@ Everything above is created **eagerly** and referenced by id in the plan. The pl
 Two templates (the app + the filter). The one carrying `WIZARD_SOURCE_CONFIG` also declares its companion via `companionTemplateIds`:
 
 ```
-WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"edge-totp","cdn":"jsdelivr","companionTemplateIds":[<other-template-id>]}
+WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"gcore/edge-totp","cdn":"jsdelivr","companionTemplateIds":[<other-template-id>]}
 ```
 
 ## Fixtures & e2e

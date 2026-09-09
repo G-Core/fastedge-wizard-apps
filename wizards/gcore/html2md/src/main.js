@@ -146,7 +146,10 @@ try {
 
     shell.addEventListener('wizard-finished', () => session.wizard.finish());
 } catch (err) {
-    document.body.innerHTML = `<p class="wizard-error">${err.code ?? 'error'}: ${err.message}</p>`;
+    const p = document.createElement('p');
+    p.className = 'wizard-error';
+    p.textContent = `${err.code ?? 'error'}: ${err.message}`;
+    document.body.replaceChildren(p);
 }
 
 window.addEventListener('beforeunload', () => session?.dispose());

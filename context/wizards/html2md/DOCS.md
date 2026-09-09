@@ -28,10 +28,10 @@ including it ships, and the host change deploys to the portal:
 - The real portal will not: `session.deployment.deploy()` will call an intent param
   the deployed host doesn't recognize yet.
 
-`package.json` pins the SDK to `"latest"` rather than a specific version (contrast
-edge-totp/edge-sso, which pin `0.0.4`) because no published version has this field
-yet. **Pin to a specific version once one ships that includes it** — don't leave it
-on `"latest"` for a production wizard past that point.
+`package.json` pins the SDK to `0.0.5` (same as edge-totp/edge-sso), which includes
+the local type definition for `cdnResourceFastedgeHandlers` but not the published host
+support. **The pin is correct — do not loosen it to `"latest"`**; bump all three wizards
+together once a version ships that includes the deployed host change.
 
 ## Tech stack
 

@@ -79,7 +79,7 @@ Google/Microsoft/Facebook each have a Redirect URI field, pre-filled on selectio
 Two templates total: "SSO - CDN Filter" (`proxy-wasm`, the launch template) and "SSO - Auth App" (`wasi-http`, its sole companion). The launch template carries `WIZARD_SOURCE_CONFIG` with the auth-app's template id (account-scoped — resolve via `fastedge.templates.read` for the target account, not hard-coded here):
 
 ```
-WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"edge-sso","cdn":"jsdelivr","companionTemplateIds":[<auth-app-template-id>]}
+WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"gcore/edge-sso","cdn":"jsdelivr","companionTemplateIds":[<auth-app-template-id>]}
 ```
 
 Source of truth for both templates' params lives in [FastEdge-templates/edge-sso](https://github.com/G-Core/FastEdge-templates/tree/main/edge-sso).
@@ -90,4 +90,4 @@ Source of truth for both templates' params lives in [FastEdge-templates/edge-sso
 
 ## SDK version
 
-Pinned to `"@gcoredev/fastedge-wizard-sdk": "0.0.4"` (same as edge-totp) — see `context/INDEX.md` for the version notes. After a bump, re-validate fixtures (`npx fastedge-wizard-sdk dist --validate-only`); a schema change may need `/sync-wizard-fixtures` or a manual fixture edit.
+Pinned to `"@gcoredev/fastedge-wizard-sdk": "0.0.5"` (same as edge-totp and html2md) — see `context/INDEX.md` for the version notes. After a bump, re-validate fixtures (`npx fastedge-wizard-sdk dist --validate-only`); a schema change may need `/sync-wizard-fixtures` or a manual fixture edit.
