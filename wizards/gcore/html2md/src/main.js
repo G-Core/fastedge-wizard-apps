@@ -61,12 +61,12 @@ try {
 
     // This template has no companion apps and no params — the wizard only needs the
     // single template it was launched for.
-    if (ctx.launchTemplateId === null) {
-        setError('This wizard must be launched from the html2md template.');
-        shell.removeAttribute('can-advance');
-    } else {
-        updateCanAdvance();
-    }
+if (ctx.launchTemplateId === null) {
+    setError('This wizard must be launched from the html2md template.');
+    shell.removeAttribute('can-advance');
+    return;
+}
+updateCanAdvance();
 
     pickButton.addEventListener('click', async () => {
         pickButton.disabled = true;
