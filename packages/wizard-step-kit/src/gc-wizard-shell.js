@@ -62,7 +62,7 @@ class GcWizardShell extends HTMLElement {
     }
 
     #onScroll = () => {
-        this.#stuckToBottom = this.#isAtBottom();
+        if (this.#isVisible()) this.#stuckToBottom = this.#isAtBottom();
     };
 
     #isAtBottom() {
