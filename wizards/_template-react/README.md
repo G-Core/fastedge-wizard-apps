@@ -57,8 +57,12 @@ This template uses `@gcore/wizard-step-kit` (at `packages/wizard-step-kit/`):
 
 See `packages/wizard-step-kit/README.md` for the full API.
 
-The `file:../../packages/wizard-step-kit` dependency path works for all wizards at
-`wizards/<name>/` depth. Update it if you move the wizard.
+The `file:../../packages/wizard-step-kit` dependency path is correct for this
+template's own location, `wizards/_template-react/`. Real wizards nest one
+level deeper — `wizards/<customer-name>-<account-id>/<name>/` (or
+`wizards/gcore/<name>/`) — so **as soon as you copy this template, update the
+path to `file:../../../packages/wizard-step-kit`** (one more `../`) and reinstall,
+or `pnpm install` will fail to resolve it.
 
 ---
 

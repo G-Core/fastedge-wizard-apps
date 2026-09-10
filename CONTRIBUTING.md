@@ -8,9 +8,57 @@ Wizards are plain HTML + JavaScript apps that run inside the Gcore portal via an
 
 ## How it works
 
-Your wizard lives at `wizards/<name>/` (source only); CI builds and publishes it — see [`README.md`](README.md#repo-layout) for the build → `gh-pages` → jsDelivr → proxy topology.
+Your wizard lives at `wizards/<customer-name>-<account-id>/<name>/` (source only); CI builds and publishes it — see [`README.md`](README.md#repo-layout) for the build → `gh-pages` → jsDelivr → proxy topology.
 
-The part that matters for submission: **merging does not make a wizard live.** After a wizard merges, the Gcore team creates a FastEdge template that points to it via `WIZARD_SOURCE_CONFIG` — that publish step is what surfaces it in the portal.
+**Naming your wizard's folder:** nest it one level under `wizards/` in a
+`<customer-name>-<account-id>/` folder — e.g. `wizards/acme-corp-482913/onboarding-wizard/`.
+The account id is what actually disambiguates: customer *names* collide (two
+"Acme"s, a rename) but account ids don't, and this keeps two customers'
+wizards from ever colliding under `release/` or in a template's `wizardDir`.
+The one exception is `wizards/gcore/` — G-Core's own wizards, no account-id
+suffix, since it's this repo's own namespace rather than a customer account.
+
+The part that matters for submission: **merging does not make a wizard live.** After a wizard merges, a FastEdge template must be configured to point at it via `WIZARD_SOURCE_CONFIG` — that publish step is what surfaces it in the portal. You can do this yourself on your own account (see §7); for a shared template in the Gcore-managed account, the Gcore team handles it.
+
+---
+
+## How your fork can serve wizards (and where it cannot)
+
+Wizards from your fork load in the portal only for **templates you own**. This is
+intentional: code that has not been reviewed by the Gcore team is never trusted to serve
+a wizard to a recipient of a shared template. Once your PR merges to `main`, your wizard
+is published to `gh-pages` and can serve shared templates too (Gcore wires this up in
+§7).
+
+### Preview testing in the portal before your PR merges
+
+You can test your wizard end-to-end in a real portal environment before opening a PR.
+The three workflow files below handle the full preview lifecycle — copy all of them into
+your fork's `.github/workflows/` directory:
+
+| File | What it does |
+|---|---|
+| `preview-deploy.yml` | Builds all wizards on every push and publishes to `preview/<branch>` in your fork via jsDelivr |
+| `preview-cleanup.yml` | Deletes `preview/<branch>` the moment its source branch is deleted (e.g. after a PR merge) |
+| `preview-sweep.yml` | Weekly backstop — removes any `preview/*` branch whose source branch is gone or has been idle for 90+ days |
+
+Copy all three, not just the deploy workflow. Without the cleanup pair, orphaned
+`preview/*` branches accumulate in your fork indefinitely.
+
+**One-time allowlist request:** the wizard proxy only fetches from approved repos. Open
+an issue in this repo titled `[Preview allowlist] <your-org>/FastEdge-Wizard-apps` and
+include your GitHub org and a brief description of the wizard you are building. Gcore
+will add your fork to the allowlist — this is a one-time step per org.
+
+Once the allowlist entry is in place, point your template's `WIZARD_SOURCE_CONFIG` at
+your fork:
+
+```
+WIZARD_SOURCE_CONFIG={"repo":"<your-org>/FastEdge-Wizard-apps","ref":"preview/<branch>","wizardDir":"<your-wizard-dir>","cdn":"jsdelivr"}
+```
+
+This only works for templates **you own**. Shared templates are always blocked from fork
+refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`.
 
 ---
 
@@ -36,22 +84,18 @@ cd FastEdge-Wizard-apps
 
 **Step zero — understand your target template first:**
 
-Before copying a wizard template, run `/wizard-intake` (Claude Code skill) from
-the `fastedge-wizard-apps/` directory. It fetches the full param list for your
-target template(s) from the Gcore API and writes `wizards/<name>/TARGET.md` — a
-durable brief with the param table, cross-app constraints, secrets/store needs,
-and CDN wiring. Later build steps and any hand-off agent reason against this
-file instead of rediscovering everything.
+Before writing wizard logic, get the full param list for your target template(s)
+from the Gcore API. The fastest way is to call
+`session.fastedge.templates.read({ id })` from a sandbox or to ask the Gcore team
+to share the param table for your template. If you have Gcore portal access and
+Claude Code, the `/wizard-intake` skill automates this: it fetches params via the
+API and writes a `TARGET.md` brief in your wizard directory (do not commit it —
+it contains account-scoped IDs).
 
-If you have a local clone of the template's source repo, pass it as the source
-path — the skill reads the README and `context/` docs for constraint prose the
-API doesn't expose. Without a source repo, the skill falls back to the API's
-`long_descr` and param `descr` fields.
-
-```bash
-# from fastedge-wizard-apps/:
-/wizard-intake   # prompts for wizard name, template ids, and optional source path
-```
+Either way, the output you need before continuing is: every param name, its
+`data_type`, whether it is `mandatory`, its `default_value`, any `metadata`
+constraints (`shared_across_apps`, `conditional-required`), and which app in a
+multi-app wizard owns it. See §3 for how to read and use this information.
 
 Pick a starting template:
 
@@ -61,11 +105,17 @@ Pick a starting template:
 | `wizards/_template-react` | React 19 — pre-wired with the step-kit |
 
 ```bash
-cp -r wizards/_template wizards/<your-wizard-name>        # vanilla
+cp -r wizards/_template wizards/<customer-name>-<account-id>/<your-wizard-name>        # vanilla
 # or
-cp -r wizards/_template-react wizards/<your-wizard-name>  # React
-cd wizards/<your-wizard-name>
+cp -r wizards/_template-react wizards/<customer-name>-<account-id>/<your-wizard-name>  # React
+cd wizards/<customer-name>-<account-id>/<your-wizard-name>
 ```
+
+**If you used `_template-react`:** it depends on `@gcore/wizard-step-kit` via
+`file:../../packages/wizard-step-kit`, correct only for the template's own
+(unnested) location. Your copy is one level deeper, so update `package.json`
+to `file:../../../packages/wizard-step-kit` (one more `../`) before installing
+— `pnpm install` fails to resolve the old path otherwise.
 
 Edit `package.json` — set `"name"` and the SDK dependency (templates and examples track `"latest"`; a production wizard can pin a specific published version — check `context/INDEX.md`):
 
@@ -93,7 +143,7 @@ Open http://localhost:9999 — you get a browser dev-tools-style panel next to y
 
 If you are a Gcore team member with portal access, you can pull real data from a live account into your fixture files with the `/sync-wizard-fixtures` skill (Claude Code). Run it from `wizards/<your-wizard>/` — it fetches live templates, apps, secrets, stores, and CDN resources, then writes fudged (safe-to-commit) fixture files. This is the fastest way to get representative data without hand-crafting JSON.
 
-If you do **not** have portal access, hand-craft fixtures from the template's README and params. Check `wizards/edge-totp/fixtures/` for a committed example — it covers both templates, their full param lists, and enough CDN/secret/store data to plan and apply in the mock host.
+If you do **not** have portal access, hand-craft fixtures from the template's README and params. Check `wizards/gcore/edge-totp/fixtures/` for a committed example — it covers both templates, their full param lists, and enough CDN/secret/store data to plan and apply in the mock host.
 
 ---
 
@@ -102,9 +152,8 @@ If you do **not** have portal access, hand-craft fixtures from the template's RE
 Before writing wizard logic, understand the template you are deploying. Every
 constraint you miss here becomes a hard-coded assumption or a silent breakage.
 
-If you ran `/wizard-intake` in §2 above, you already have `wizards/<name>/TARGET.md`
-— start there. It has the param table, cross-app constraints, secrets/store needs,
-and CDN wiring derived from the live API.
+Before writing wizard logic, make sure you have the param table from §2. The
+param list is the document you reason against for the rest of this section.
 
 **The param source of truth is `fastedge.templates.read` (live API) + the
 template's own README/docs — never `registry.json`.** That file is a CI/CD
@@ -119,12 +168,9 @@ prose descriptions can lag behind the code; the actual `params` array returned b
 secret. If you spot a contradiction, note it as a bug in the template source repo
 — but code against the param list, not the prose.
 
-**How to inspect params (if you skipped wizard-intake):**
-
-Run `/sync-wizard-fixtures` (Claude Code skill) from your wizard directory with
-`templates` selected — it fetches the full param list from the live portal
-(including `metadata`) and writes it to `fixtures/fastedge/templates.json`. Open
-that file and read every param:
+**Reading the param list — what to look for:** open `fixtures/fastedge/templates.json`
+(written by `/sync-wizard-fixtures` if you have portal access, or hand-crafted from
+the template README) and check every param:
 
 - Which params have `"data_type": "secret"` or `"data_type": "store"`? Note: params
   that hold an Edge Storage id or name are often typed `"string"` (e.g. `KV_STORE_ID`,
@@ -133,10 +179,9 @@ that file and read every param:
 - Are there params that must match across multiple apps? (See `context/PARAM_CONSTRAINTS.md`.)
 - Does the template have a profile/variant concept (e.g. Profile A vs B) that changes which params are needed?
 
-For multi-template wizards: run `/sync-wizard-fixtures` with **all** target
-templates selected. Params marked `shared_across_apps` in their `metadata` must
-carry the same value on every app — the wizard collects them once and binds
-everywhere.
+For multi-template wizards: make sure you have the param list for **all** target
+templates. Params marked `shared_across_apps` in their `metadata` must carry the
+same value on every app — the wizard collects them once and binds everywhere.
 
 **Edge Storage binding pattern** — if an app needs a store id or name in its env:
 
@@ -268,7 +313,7 @@ pnpm -w run lint:css     # must pass — no raw colours
 pnpm run build           # builds all wizards — must pass cleanly
 ```
 
-> **Root vs wizard build**: `pnpm run build` from the repo root builds every wizard and assembles `release/`. `pnpm run build` from `wizards/<name>/` builds only your wizard into its own `dist/`. The gate above requires the root build to pass.
+> **Root vs wizard build**: `pnpm run build` from the repo root builds every wizard and assembles `release/`. `pnpm run build` from `wizards/<customer-name>-<account-id>/<name>/` builds only your wizard into its own `dist/`. The gate above requires the root build to pass.
 
 Check your wizard in both themes (the mock host has a "Switch to dark" button). Check at 1280×800 and a narrower viewport.
 
@@ -302,12 +347,16 @@ Both must pass before merge.
 
 CI builds all wizards and force-pushes built output to the `gh-pages` branch. jsDelivr picks it up within minutes (CI purges the cache after publish).
 
-The wizard is not yet live in the portal. The Gcore team then:
-1. Runs `/wizard-publish` to set `WIZARD_SOURCE_CONFIG` (and `companionTemplateIds`,
-   for a multi-app wizard) on the launch FastEdge template via the Gcore API
-2. Verifies it against a real portal environment
+The wizard is not yet live in the portal — a FastEdge template must be configured to
+point at it. **If you have Gcore portal access and Claude Code**, run `/wizard-publish`
+from this repo: it fetches your launch template, builds the correct `WIZARD_SOURCE_CONFIG`
+value, and patches the template via the API. It works for any template on your account.
 
-Once the template is published, the wizard is live.
+If you need a **shared template** (visible to all portal users) wired up, reach out to
+the Gcore team — they run the same `/wizard-publish` step on the Gcore-managed account
+after verifying the wizard against a real portal environment.
+
+Once the template is configured, the wizard is live.
 
 ---
 

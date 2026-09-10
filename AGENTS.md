@@ -49,7 +49,7 @@ Different wizards have no shared source files — work on them in parallel agent
 safely. When creating or updating multiple wizards, spawn one agent per wizard.
 Each agent:
 
-1. Works only in its assigned `wizards/<name>/` directory
+1. Works only in its assigned `wizards/<customer-name>-<account-id>/<name>/` directory
 2. Creates or updates `context/wizards/<name>/DOCS.md`
 3. Reports the `context/INDEX.md` registry row to add — the coordinating agent
    applies it to avoid conflicts

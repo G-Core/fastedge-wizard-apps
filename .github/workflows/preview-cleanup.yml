@@ -1,0 +1,41 @@
+# Deletes a wizard's `preview/<branch>` branch the moment its source branch is
+# deleted, so previews don't outlive the branch they preview (most repos
+# auto-delete the source branch on PR merge, which cleans this up for free).
+#
+# `delete` isn't a ref-checkout event — GitHub always runs the workflow file
+# as it exists on the default branch, so a deleted feature branch can't ship
+# its own (missing) copy of this guard the way `workflow_dispatch` could.
+#
+# Backstop: preview-sweep.yml (weekly) catches anything this misses.
+name: Clean up wizard preview on branch delete
+
+on:
+  delete:
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: |
+      github.event.ref_type == 'branch' &&
+      github.event.ref != 'main' &&
+      github.event.ref != 'gh-pages' &&
+      !startsWith(github.event.ref, 'preview/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete matching preview branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          repo="${{ github.repository }}"
+          branch="${{ github.event.ref }}"
+          preview="preview/${branch}"
+
+          if gh api "repos/${repo}/branches/${preview}" > /dev/null 2>&1; then
+            echo "Deleting preview for deleted branch '${branch}': ${preview}"
+            gh api -X DELETE "repos/${repo}/git/refs/heads/${preview}"
+          else
+            echo "No preview branch for '${branch}' — nothing to do"
+          fi

@@ -62,12 +62,23 @@ class GcWizardShell extends HTMLElement {
     }
 
     #onScroll = () => {
-        const doc = document.documentElement;
-        this.#stuckToBottom = window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+        if (this.#isVisible()) this.#stuckToBottom = this.#isAtBottom();
     };
 
+    #isAtBottom() {
+        const doc = document.documentElement;
+        return window.innerHeight + window.scrollY >= doc.scrollHeight - 4;
+    }
+
+    // getClientRects() is empty when this element (or any ancestor, e.g. a host's
+    // <main hidden> wrapper shown only after connect() resolves) isn't actually
+    // rendered — cheaper than offsetParent and works for fixed/sticky ancestors too.
+    #isVisible() {
+        return this.getClientRects().length > 0;
+    }
+
     #followBottom() {
-        if (this.#stuckToBottom) {
+        if (this.#stuckToBottom && this.#isVisible()) {
             window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
         }
     }
@@ -154,8 +165,22 @@ class GcWizardShell extends HTMLElement {
     #show(index) {
         const steps = this.#steps();
         this.#current = index;
-        this.#stuckToBottom = true;
         steps.forEach((s, i) => { s.hidden = i !== index; });
+
+        // New step starts scrolled to top so its heading is visible; #isAtBottom() then
+        // reflects reality (true for short steps, false for tall ones) instead of forcing
+        // the ResizeObserver-driven follow-bottom behavior (meant for streaming content
+        // like deploy progress) to yank the page down as soon as the step lays out.
+        // Skip this while the shell isn't actually rendered yet (e.g. a vanilla host that
+        // builds it inside a still-`hidden` <main>, before connect() resolves) — scrollHeight
+        // is meaningless on a collapsed layout, and caching a stale "true" here would fire an
+        // unwanted follow-bottom scroll off the ResizeObserver once the host reveals it.
+        if (this.#isVisible()) {
+            window.scrollTo(0, 0);
+            this.#stuckToBottom = this.#isAtBottom();
+        } else {
+            this.#stuckToBottom = false;
+        }
 
         this.#indicator.querySelectorAll('.wizard-step-btn').forEach((btn, i) => {
             btn.toggleAttribute('aria-current', i === index);
@@ -175,7 +200,7 @@ class GcWizardShell extends HTMLElement {
             const heading = active.querySelector('h1,h2,h3,h4,h5,h6');
             if (heading) {
                 heading.setAttribute('tabindex', '-1');
-                heading.focus();
+                heading.focus({ preventScroll: true });
             }
         }
     }

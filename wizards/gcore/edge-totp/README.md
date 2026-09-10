@@ -48,7 +48,7 @@ defaults (see `TARGET.md` for the full param tables and defaults).
 ## Run locally
 
 ```bash
-cd wizards/edge-totp
+cd wizards/gcore/edge-totp
 pnpm install
 pnpm run dev      # builds and starts the mock host on http://localhost:9999
 ```

@@ -1,0 +1,17 @@
+{
+    "name": "html2md",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "esbuild src/main.js --bundle --format=esm --outfile=dist/main.js && esbuild src/styles.css --bundle --outfile=dist/styles.css && cp src/index.html dist/index.html",
+        "dev": "pnpm run build && fastedge-wizard-dev dist",
+        "dev:watch": "esbuild src/main.js --bundle --watch --outfile=dist/main.js"
+    },
+    "dependencies": {
+        "@gcoredev/fastedge-wizard-sdk": "0.0.5",
+        "@gcore/wizard-step-kit": "file:../../../packages/wizard-step-kit"
+    },
+    "devDependencies": {
+        "esbuild": "^0.25.0"
+    }
+}

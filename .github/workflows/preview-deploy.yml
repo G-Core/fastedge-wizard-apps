@@ -1,0 +1,58 @@
+# Builds every wizard from a non-main branch and force-pushes the built output
+# to a per-branch `preview/<branch>` branch — a self-service preview channel
+# for owned (not-yet-shared) templates. Kept structurally separate from
+# `gh-pages`: SHARED_TEMPLATE_ALLOWED_REFS in the portal host never trusts a
+# `preview/*` ref, so pointing a shared template here is never possible. Only
+# `main` -> `gh-pages` (deploy.yml) is trusted for a shared template.
+#
+# Lifecycle: preview-cleanup.yml deletes preview/<branch> when <branch> is
+# deleted; preview-sweep.yml is the weekly backstop for anything that misses
+# (orphaned or long-idle previews).
+name: Publish wizard previews
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - gh-pages
+      - 'preview/**'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wizard-preview-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node Environment
+        uses: ./.github/setup-node
+
+      - name: Build all wizards
+        run: pnpm run build
+
+      - name: Publish release/ to preview branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./release
+          publish_branch: preview/${{ github.ref_name }}
+          force_orphan: true
+
+      # See deploy.yml for why this purge matters (jsDelivr branch-ref caching).
+      - name: Purge jsDelivr cache
+        run: |
+          repo="${{ github.repository }}"
+          ref="preview/${{ github.ref_name }}"
+          cd release
+          find . -type f | sed 's|^\./||' | while read -r f; do
+            url="https://purge.jsdelivr.net/gh/${repo}@${ref}/${f}"
+            echo "purge: $url"
+            curl -fsS "$url" > /dev/null || echo "  warn: purge failed for ${f}"
+          done

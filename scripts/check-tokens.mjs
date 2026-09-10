@@ -23,7 +23,7 @@ const defined = new Set(
 );
 console.log(`check-tokens: loaded ${defined.size} tokens from wizard.css`);
 
-const patterns = ['wizards/*/src/**/*.css', 'packages/*/src/**/*.css'];
+const patterns = ['wizards/**/src/**/*.css', 'packages/*/src/**/*.css'];
 const files = [];
 for (const pattern of patterns) {
     for await (const f of glob(pattern, { cwd: root })) files.push(join(root, f));

@@ -1,6 +1,6 @@
 ---
 name: wizard-intake
-description: Fetch target template params from the Gcore API, reconcile with any source-repo docs, and write wizards/<name>/TARGET.md as a durable brief for the build phase. Run as step zero before copying a wizard template.
+description: Fetch target template params from the Gcore API, reconcile with any source-repo docs, and write wizards/<customer-name>-<account-id>/<name>/TARGET.md as a durable brief for the build phase. Run as step zero before copying a wizard template.
 ---
 
 Understand a target FastEdge template before building a wizard for it.
@@ -8,8 +8,9 @@ Understand a target FastEdge template before building a wizard for it.
 ## When to use
 
 Run before copying `wizards/_template` or `wizards/_template-react`. Produces
-`wizards/<name>/TARGET.md` — the param table and constraint brief that every
-subsequent build step and agent reasons against, instead of re-discovering.
+`wizards/<customer-name>-<account-id>/<name>/TARGET.md` — the param table and
+constraint brief that every subsequent build step and agent reasons against,
+instead of re-discovering.
 
 ## Args
 
@@ -21,8 +22,15 @@ subsequent build step and agent reasons against, instead of re-discovering.
 
 Ask the user in a single message:
 
-1. **Wizard name** — the directory that will be created under `wizards/`. Must be
-   kebab-case, no spaces. Example: `edge-totp`.
+1. **Wizard name** — the directory that will be created under
+   `wizards/<customer-name>-<account-id>/`. Both the customer folder and the
+   wizard name must be kebab-case, no spaces. Ask for the customer name +
+   account id if not already clear from context, then combine as
+   `<customer-name>-<account-id>/<wizard-name>` — e.g.
+   `acme-corp-482913/onboarding-wizard`. Exception: a G-Core-owned wizard
+   nests under the bare `gcore/` folder, no account id (e.g. `gcore/edge-totp`).
+   Everywhere below, `<name>` means this full path, not just the wizard's own
+   leaf name.
 
 2. **Target templates** — one or more template IDs or names. **List the primary
    (launch) template first**, companions after. For CDN filter wizards (e.g.
@@ -80,7 +88,8 @@ vs stated.
 
 ### 3 — Reconcile and write TARGET.md
 
-Write `wizards/<name>/TARGET.md`. Structure:
+Write `wizards/<name>/TARGET.md` (where `<name>` is the full path confirmed in
+step 0, e.g. `gcore/edge-totp` or `acme-corp-482913/onboarding-wizard`). Structure:
 
 ```markdown
 # Wizard intake: <name>

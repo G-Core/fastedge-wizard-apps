@@ -7,11 +7,12 @@ Wire a merged wizard live by setting `WIZARD_SOURCE_CONFIG` on its launch templa
 
 ## When to use
 
-This is the manual step CONTRIBUTING.md §7 ("After merge") describes as a
-Gcore-team-only action: create/patch a FastEdge template so it launches the
-wizard. Run this **after** the wizard's PR has merged and CI has published to
-`gh-pages` — pointing a template at a wizard path that doesn't exist yet on
-`gh-pages` just 404s in the portal.
+Run this after the wizard's PR has merged and CI has published to `gh-pages` —
+pointing a template at a wizard path that doesn't exist yet on `gh-pages` just
+404s in the portal. Any contributor with Gcore portal access can use this to wire
+up a wizard on their own account. For shared templates in the Gcore-managed account,
+a Gcore team member runs it after verifying the wizard against a real portal
+environment.
 
 ## Args
 
@@ -24,15 +25,17 @@ not supplied.
 
 Ask the user in a single message:
 
-1. **Wizard**: which directory under `wizards/` (skip `_template*`). If only
-   one wizard lacks a wired template, suggest it but confirm rather than assume.
+1. **Wizard**: which wizard under `wizards/` — any directory at any depth with
+   its own `package.json` (skip `_template*`), e.g. `gcore/edge-totp` or
+   `acme-corp-482913/onboarding-wizard`. If only one wizard lacks a wired
+   template, suggest it but confirm rather than assume.
 2. **Launch template id**: the id of the FastEdge template that will carry
    `WIZARD_SOURCE_CONFIG` and launch the wizard (this is the *anchor* template
    — for a multi-companion wizard it's the one the portal launches from, not
    necessarily a template that does real work; edge-sso's launch template is
    an inert placeholder).
 
-If `wizards/<name>/TARGET.md` exists, read it first and propose the launch
+If `wizards/<selected-wizard-path>/TARGET.md` exists, read it first and propose the launch
 template id + companion ids parsed from its "Target templates" table (look for
 a row whose Role column says **Launch**; all other listed real template ids
 become `companionTemplateIds`). Show the parsed values and ask the user to
@@ -52,8 +55,15 @@ Keep `binary_id`, `name`, `short_descr`, `long_descr`, `owned`, `params` (defaul
 ### 2 — Build the WIZARD_SOURCE_CONFIG value
 
 ```json
-{"repo":"G-Core/FastEdge-Wizard-apps","path":"gh-pages/<wizard-dir>","cdn":"jsdelivr"}
+{"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"<wizard-dir>","cdn":"jsdelivr"}
 ```
+
+`ref` and `wizardDir` are separate fields, not a combined path string — a git
+ref may itself contain a `/` (e.g. a branch like `feat/my-wizard`), which a
+combined `"<ref>/<wizard-dir>"` string can't represent unambiguously.
+`wizardDir` itself may contain `/` with no special handling needed — e.g.
+`"<customer-folder>/<wizard-name>"` for a customer nesting wizards under a
+subfolder.
 
 If the wizard has companions (from TARGET.md or user input), add
 `"companionTemplateIds":[<id>, ...]` to the same object — see
@@ -110,7 +120,7 @@ though this change only touches `params` — send them unchanged.
 ### 7 — Report
 
 - Launch template id + name
-- The exact `WIZARD_SOURCE_CONFIG` value written (repo/path/cdn/companions)
+- The exact `WIZARD_SOURCE_CONFIG` value written (repo/ref/wizardDir/cdn/companions)
 - Whether this was a fresh param or an update to an existing one
 - Reminder: the portal only resolves this once `gh-pages/<wizard-dir>` exists —
   if CI hasn't published yet, the template will 404 until it does.

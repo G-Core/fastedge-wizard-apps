@@ -59,15 +59,23 @@ repo. jsDelivr reads the git branch directly and needs no Pages feature.
 
 ### Wiring a wizard to the portal
 
-Set on the FastEdge template that launches this wizard (first path segment is the
-git ref, the rest is the wizard subdir):
+Set on the FastEdge template that launches this wizard — `ref` and `wizardDir`
+are explicit, separate fields (not a combined path string), since a git ref may
+itself contain a `/` (e.g. a branch like `feat/my-wizard`):
 
 ```
-WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","path":"gh-pages/<wizard-dir>","cdn":"jsdelivr"}
+WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"<wizard-dir>","cdn":"jsdelivr"}
 ```
 
 The portal reads `WIZARD_SOURCE_CONFIG` and builds the proxy path from `repo` +
-`path` + `cdn`.
+`ref` + `wizardDir` + `cdn` — percent-encoding any `/` inside `ref` so it
+survives as a single URL path segment; the proxy decodes it back before
+validating (see `parseSource` in the proxy app).
+
+`wizardDir` may itself contain `/` — e.g. `"<customer-folder>/<wizard-name>"`
+for a customer nesting wizards under a subfolder. No special encoding needed
+here: the proxy already treats everything after the ref as the (possibly
+multi-segment) wizard path, validating each segment individually.
 
 ---
 
@@ -200,7 +208,7 @@ Slash commands (`.claude/skills/`) — invoke from the `fastedge-wizard-apps/` w
 
 | Command | What it does |
 |---------|-------------|
-| `/wizard-intake` | Fetches target template params via the Gcore API, writes `wizards/<name>/TARGET.md` + initial fixture templates with normalised mock-host IDs. Run as step zero before building a wizard. |
+| `/wizard-intake` | Fetches target template params via the Gcore API, writes `wizards/<customer-name>-<account-id>/<name>/TARGET.md` + initial fixture templates with normalised mock-host IDs. Run as step zero before building a wizard. |
 | `/sync-wizard-fixtures` | Fetches live Gcore templates/apps/secrets, presents selection menus, fudges IDs, writes `fixtures/` and validates against SDK schemas. |
 | `/wizard-publish` | Run after merge: sets `WIZARD_SOURCE_CONFIG` (+ `companionTemplateIds`) on a wizard's launch template via the Gcore API — the manual "wire it live" step from CONTRIBUTING.md §7. Idempotent. |
 
@@ -220,8 +228,9 @@ independently — their `WIZARD_SOURCE_CONFIG` ref/cdn need not match this repo'
 | Wizard | Directory | Status | Notes |
 |--------|-----------|--------|-------|
 | Intent reference (all v1 write intents, heavily commented) | `wizards/_example-intents/` | Active (dev-only, not published) | See `src/main.js` — copy patterns from here |
-| edge-totp (two-app: `proxy-wasm` filter + `wasi-http` app, CDN wiring) | `wizards/edge-totp/` | Active — reference React / multi-app wizard | Built in the "real wizard" experiment; canonical example for CDN rules/origins, shared secrets, Edge Storage binding, and Profile A/B |
-| edge-sso (two-app: `wasi-http` auth-app + `proxy-wasm` filter, 3 variants) | `wizards/edge-sso/` | Active — reference multi-variant wizard | Launch template is an inert placeholder; all 6 real templates are companions (3 variants × {auth-app, filter}). Canonical example for a "pick 2 of N companions" variant picker and ES256-keypair vs. shared-secret session signing |
+| edge-totp (two-app: `proxy-wasm` filter + `wasi-http` app, CDN wiring) | `wizards/gcore/edge-totp/` | Active — reference React / multi-app wizard | Built in the "real wizard" experiment; canonical example for CDN rules/origins, shared secrets, Edge Storage binding, and Profile A/B |
+| edge-sso (two-app: `proxy-wasm` filter + `wasi-http` auth-app, 3 variants via `SSO_VARIANT`) | `wizards/gcore/edge-sso/` | Active — reference multi-variant wizard | 2 templates total; `SSO_VARIANT` written identically to both selects gate-only/cookie/header behaviour at runtime — no per-variant template selection. Canonical example for variant-by-param design and ES256-keypair vs. shared-secret session signing |
+| html2md (single `proxy-wasm` app, zero params, resource-level CDN wiring) | `wizards/gcore/html2md/` | Blocked on SDK release — see `context/wizards/html2md/DOCS.md` | Canonical example for `deployment.plan`'s `cdnResourceFastedgeHandlers` (resource-level `options.fastedge`, not a path rule) — the only way to reach `on_response_body`/`on_request_body` |
 
 > Starters (not wizards): `wizards/_template` (vanilla), `wizards/_template-react` (React).
 

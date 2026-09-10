@@ -1,8 +1,10 @@
 /**
- * Builds every wizard under wizards/ in isolation.
+ * Builds every wizard under wizards/ in isolation, at any nesting depth (e.g.
+ * a flat wizards/<name>/ or a customer-nested wizards/<customer>/<name>/).
  * Each wizard manages its own deps and package manager — this script detects
  * the lockfile and runs the appropriate install + build.
- * Skips directories starting with '_' (templates, utilities).
+ * Skips directories starting with '_' (templates, utilities) or '.', and
+ * node_modules.
  */
 import { execSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
@@ -14,10 +16,30 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const wizardsDir = join(root, 'wizards');
 const CI = !!process.env.CI;
 
-const entries = await readdir(wizardsDir, { withFileTypes: true });
-const wizards = entries
-  .filter(e => e.isDirectory() && !e.name.startsWith('_') && !e.name.startsWith('.'))
-  .map(e => e.name);
+// A wizard is any directory (at any depth under wizards/) that has its own
+// package.json — we stop descending there rather than treating an
+// intermediate customer-folder as a wizard itself.
+async function findWizards(dir, base = '') {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const found = [];
+
+  for (const e of entries) {
+    if (!e.isDirectory() || e.name.startsWith('_') || e.name.startsWith('.') || e.name === 'node_modules') continue;
+
+    const relPath = base ? `${base}/${e.name}` : e.name;
+    const absPath = join(dir, e.name);
+
+    if (existsSync(join(absPath, 'package.json'))) {
+      found.push(relPath);
+    } else {
+      found.push(...await findWizards(absPath, relPath));
+    }
+  }
+
+  return found;
+}
+
+const wizards = await findWizards(wizardsDir);
 
 if (wizards.length === 0) {
   console.error('build-all: no wizards found in wizards/');

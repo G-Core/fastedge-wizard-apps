@@ -17,6 +17,8 @@ pnpm run dev                                    # builds + serves the mock host 
 
 Open the printed URL — you get the wizard framed by a stub portal with fake API data, so you can build and iterate the whole flow offline. Edit `src/main.js` (or `.jsx`), rebuild, refresh.
 
+Before opening a PR, move your wizard under `wizards/<customer-name>-<account-id>/<wizard-name>/` — see [`CONTRIBUTING.md`](CONTRIBUTING.md) for the naming convention and why the account id matters.
+
 Starters and examples under `wizards/`:
 
 | Wizard             | Use it as                                                                |
@@ -30,7 +32,7 @@ Starters and examples under `wizards/`:
 ## Repo layout
 
 ```
-wizards/<name>/       your wizard — commit src/, package.json + lockfile (and fixtures/ if used); CI builds it
+wizards/<customer-name>-<account-id>/<name>/  your wizard — commit src/, package.json + lockfile (and fixtures/ if used); CI builds it
   _template*/         starter skeletons (not deployed)
 packages/             shared build-time code (e.g. @gcore/wizard-step-kit); bundled in, never fetched at runtime
 scripts/              build-all, assemble, token check, SDK bump

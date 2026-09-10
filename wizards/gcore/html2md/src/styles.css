@@ -1,0 +1,65 @@
+/* Pull in step-kit component styles (bundled by esbuild — no runtime fetch). */
+@import url("@gcore/wizard-step-kit/styles");
+
+/* Wizard-specific layout and variants only.
+ * Base element styles (button, input, h1…) come from /styles/v1/wizard.css —
+ * injected automatically, no <link> needed.
+ * Colours must use var(--gc-*) tokens; raw colour literals fail the CI lint gate.
+ */
+
+.html2md-lede {
+    color: var(--gc-wizard-text-muted);
+    max-width: 60ch;
+}
+
+.html2md-note {
+    border: 1px solid var(--gc-wizard-border);
+    border-left-width: 4px;
+    border-left-color: var(--gc-wizard-info);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    background: var(--gc-wizard-surface);
+    font-size: 0.875rem;
+}
+
+.html2md-field {
+    display: block;
+    margin-bottom: 1rem;
+    max-width: 60ch;
+}
+
+.html2md-field > span:first-child {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.html2md-field input {
+    width: 100%;
+}
+
+.html2md-hint {
+    display: block;
+    color: var(--gc-wizard-text-muted);
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+}
+
+.html2md-summary {
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.5rem 1rem;
+    margin: 0.75rem 0;
+}
+
+.html2md-summary dt {
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.html2md-summary dd {
+    margin: 0 0 0.25rem;
+    color: var(--gc-wizard-text-muted);
+    overflow-wrap: break-word;
+}

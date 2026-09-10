@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "name": "Transform HTML to Markdown",
+        "short_descr": "Transform origin's HTML responses to Markdown format when request header \"Accept\" is equal to \"text/markdown\". Particularly useful for AI Agents.",
+        "long_descr": "In CDN resource configuration assign the application to `On request headers`, `On response headers` and `On response body` FastEdge handlers.\n\nTemplate source is available here: [FastEdge-templates/html2md](https://github.com/G-Core/FastEdge-templates/tree/main/html2md)",
+        "api_type": "proxy-wasm",
+        "binary_id": 1,
+        "params": []
+    }
+]

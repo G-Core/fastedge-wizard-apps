@@ -14,7 +14,7 @@ It's the reference example for multi-app deploy, CDN origin+rule wiring, shared 
 React 19 (JSX via esbuild `--jsx=automatic --minify`) with `@gcore/wizard-step-kit/react` for the stepped shell; the SDK is bundled in.
 
 ```
-wizards/edge-totp/
+wizards/gcore/edge-totp/
   src/
     index.html
     main.jsx          ← plan assembly + deploy orchestration
@@ -30,7 +30,7 @@ Never commit `dist/`/`release/` — CI builds and publishes.
 ## Build & dev
 
 ```bash
-cd wizards/edge-totp
+cd wizards/gcore/edge-totp
 pnpm install
 pnpm run dev          # builds + starts the SDK mock host on localhost
 pnpm run dev:watch    # esbuild --watch in a second terminal (no host restart)
@@ -64,7 +64,7 @@ Everything above is created **eagerly** and referenced by id in the plan. The pl
 Two templates (the app + the filter). The one carrying `WIZARD_SOURCE_CONFIG` also declares its companion via `companionTemplateIds`:
 
 ```
-WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","path":"gh-pages/edge-totp","cdn":"jsdelivr","companionTemplateIds":[<other-template-id>]}
+WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"gcore/edge-totp","cdn":"jsdelivr","companionTemplateIds":[<other-template-id>]}
 ```
 
 ## Fixtures & e2e

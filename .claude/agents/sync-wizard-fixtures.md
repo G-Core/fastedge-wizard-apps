@@ -23,7 +23,10 @@ If fixture schema validation fails at the end, it means the installed SDK schema
 
 Ask the user two things in a single message:
 
-1. **Wizard**: List all directories under `wizards/` (skip `_template`) and ask which wizard to update. If only one exists, confirm rather than silently assuming.
+1. **Wizard**: List every wizard under `wizards/` — any directory at any depth
+   with its own `package.json` (skip `_template*`), e.g. `gcore/edge-totp` or
+   `acme-corp-482913/onboarding-wizard` — and ask which one to update. If only
+   one exists, confirm rather than silently assuming.
 
 2. **Resource types**: Ask which fixture types to sync. Present all seven options and let them pick any subset:
 
@@ -274,13 +277,13 @@ If any parse fails, report the Zod error and stop — do NOT write files. Sugges
 
 Write only the resource types that were selected (create directories as needed):
 
-FastEdge fixtures → `wizards/<name>/fixtures/fastedge/`:
+FastEdge fixtures → `wizards/<selected-wizard-path>/fixtures/fastedge/`:
 - `templates.json` — if templates were selected
 - `apps.json` — if apps were selected
 - `secrets.json` — if secrets were selected
 - `stores.json` — if KV stores were selected
 
-CDN fixtures → `wizards/<name>/fixtures/cdn/`:
+CDN fixtures → `wizards/<selected-wizard-path>/fixtures/cdn/`:
 - `resources.json` — only if `cdn-resources` was explicitly selected (not written if cdn-resources was fetched solely to identify rule sources)
 - `origins.json` — if cdn-origins was selected
 - `rules.json` — if cdn-rules was selected (flat array across all selected CDN resources)
