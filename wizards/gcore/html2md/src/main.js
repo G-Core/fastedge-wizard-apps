@@ -3,8 +3,7 @@
 import '@gcore/wizard-step-kit';
 import { connect, optional, WizardError } from '@gcoredev/fastedge-wizard-sdk';
 
-const hostOrigin =
-    new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
+const hostOrigin = new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
 
 const main = document.querySelector('main');
 const shell = document.querySelector('gc-wizard-shell');
@@ -66,7 +65,6 @@ try {
         shell.removeAttribute('can-advance');
         return;
     }
-
     updateCanAdvance();
 
     pickButton.addEventListener('click', async () => {
