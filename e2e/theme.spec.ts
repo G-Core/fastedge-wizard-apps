@@ -46,8 +46,8 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
     // id). Give it one proxy-wasm filter + one wasi-http app so it renders.
     'gcore/edge-totp': {
         context: {
-            launchTemplateId: 735,
-            companionTemplateIds: [734],
+            launchTemplateId: 1,
+            companionTemplateIds: [2],
             theme: 'light',
             locale: 'en',
             feAppId: null,
@@ -55,8 +55,8 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             featureFlags: {},
         },
         templatesById: {
-            735: { id: 735, api_type: 'proxy-wasm', name: 'TOTP - MFA Enforcement Filter', params: [] },
-            734: { id: 734, api_type: 'wasi-http', name: 'TOTP - Challenge-Verify App', params: [] },
+            1: { id: 1, api_type: 'proxy-wasm', name: 'TOTP - MFA Enforcement Filter', params: [] },
+            2: { id: 2, api_type: 'wasi-http', name: 'TOTP - Challenge-Verify App', params: [] },
         },
     },
     // edge-sso ships one auth-app + one cdn-filter pair, shared across all
@@ -65,8 +65,8 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
     // api_type (never hard-coded id), same pattern as edge-totp above.
     'gcore/edge-sso': {
         context: {
-            launchTemplateId: 191,
-            companionTemplateIds: [194],
+            launchTemplateId: 1,
+            companionTemplateIds: [2],
             theme: 'light',
             locale: 'en',
             feAppId: null,
@@ -74,15 +74,15 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             featureFlags: {},
         },
         templatesById: {
-            191: { id: 191, api_type: 'wasi-http', name: 'SSO - Auth App', params: [] },
-            194: { id: 194, api_type: 'proxy-wasm', name: 'SSO - CDN Filter', params: [] },
+            1: { id: 1, api_type: 'wasi-http', name: 'SSO - Auth App', params: [] },
+            2: { id: 2, api_type: 'proxy-wasm', name: 'SSO - CDN Filter', params: [] },
         },
     },
     // html2md is single-app/zero-param — it only needs launchTemplateId to be non-null
     // to render past the "must be launched from..." bail state.
     'gcore/html2md': {
         context: {
-            launchTemplateId: 558,
+            launchTemplateId: 1,
             companionTemplateIds: [],
             theme: 'light',
             locale: 'en',
@@ -91,7 +91,7 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             featureFlags: {},
         },
         templatesById: {
-            558: { id: 558, api_type: 'proxy-wasm', name: 'Transform HTML to Markdown', params: [] },
+            1: { id: 1, api_type: 'proxy-wasm', name: 'Transform HTML to Markdown', params: [] },
         },
     },
 };

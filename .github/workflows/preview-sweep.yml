@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           cutoff=$(date -u -d '90 days ago' +%s)
 
-          gh api "repos/${REPO}/branches" --paginate --jq '.[].name' | grep '^preview/' | while read -r preview; do
+          gh api "repos/${REPO}/branches" --paginate --jq '.[].name' | (grep '^preview/' || true) | while read -r preview; do
             source_branch="${preview#preview/}"
 
             if ! gh api "repos/${REPO}/branches/${source_branch}" > /dev/null 2>&1; then

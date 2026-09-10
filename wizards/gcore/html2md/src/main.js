@@ -64,9 +64,10 @@ try {
     if (ctx.launchTemplateId === null) {
         setError('This wizard must be launched from the html2md template.');
         shell.removeAttribute('can-advance');
-    } else {
-        updateCanAdvance();
+        return;
     }
+
+    updateCanAdvance();
 
     pickButton.addEventListener('click', async () => {
         pickButton.disabled = true;

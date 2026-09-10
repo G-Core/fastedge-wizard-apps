@@ -5,7 +5,7 @@
         "short_descr": "Edge TOTP MFA enforcement filter. Verifies the mfa_session cookie (HS256) on every CDN request and redirects or denies unauthenticated users. Pairs with totp-app which issues the session after a successful OTP challenge.",
         "long_descr": "TOTP MFA Enforcement Filter. Deploys the CDN enforcement side of a two-component TOTP MFA system (proxy-wasm). Must be deployed together with the companion HTTP app. Shared params (MFA_SESSION_KEY, MFA_AUDIENCE, MFA_ISSUER, MFA_SESSION_COOKIE, AUTH_PREFIX) must match on both. MFA_AUDIENCE is fail-closed: the filter refuses every session if unset.",
         "api_type": "proxy-wasm",
-        "binary_id": 744992,
+        "binary_id": 1,
         "params": [
             {
                 "name": "MFA_SESSION_KEY",
@@ -57,7 +57,7 @@
         "short_descr": "Edge TOTP MFA bolt-on. Hosts the OTP challenge/verify UI and enrolment flow in front of an existing login. Pairs with totp-filter which enforces the mfa_session cookie on CDN resources.",
         "long_descr": "",
         "api_type": "wasi-http",
-        "binary_id": 744991,
+        "binary_id": 2,
         "params": [
             {
                 "name": "MFA_SESSION_KEY",

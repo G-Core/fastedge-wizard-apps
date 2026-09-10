@@ -5,7 +5,7 @@
         "short_descr": "SSO CDN filter. Verifies the session token on every request and redirects unauthenticated users. SSO_VARIANT selects gate-only, cookie, or header behavior.",
         "long_descr": "",
         "api_type": "proxy-wasm",
-        "binary_id": 822162,
+        "binary_id": 1,
         "params": [
             {
                 "name": "SSO_VARIANT",
@@ -71,7 +71,7 @@
         "short_descr": "SSO auth app. Handles identity-provider federation and issues signed session tokens. SSO_VARIANT selects gate-only, cookie, or header behavior.",
         "long_descr": "",
         "api_type": "wasi-http",
-        "binary_id": 822161,
+        "binary_id": 2,
         "params": [
             {
                 "name": "SSO_VARIANT",
