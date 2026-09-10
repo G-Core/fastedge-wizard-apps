@@ -1,4 +1,4 @@
-/* node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/styles.css */
+/* node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/styles.css */
 gc-wizard-shell {
   display: block;
   position: relative;
@@ -297,57 +297,34 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
 }
 
 /* src/styles.css */
-.sso-lede {
+.totp-lede {
   color: var(--gc-wizard-text-muted);
   max-width: 60ch;
 }
-.sso-field {
+.totp-lede code {
+  white-space: nowrap;
+}
+.totp-field {
   display: block;
   margin-bottom: 1rem;
   max-width: 60ch;
 }
-.sso-field > span {
+.totp-field > span {
   display: block;
   font-weight: 500;
   margin-bottom: 0.25rem;
 }
-.sso-field input,
-.sso-field select {
+.totp-field input,
+.totp-field select {
   width: 100%;
 }
-.sso-hint {
+.totp-hint {
   display: block;
   color: var(--gc-wizard-text-muted);
   font-size: 0.8125rem;
   margin-top: 0.25rem;
 }
-.sso-checklist {
-  display: block;
-  margin-bottom: 1rem;
-  max-width: 60ch;
-  border: 0;
-  padding: 0;
-}
-.sso-checklist > span:first-child {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-.sso-checkbox {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 400;
-  font-size: inherit;
-  color: inherit;
-  margin: 0.25rem 0;
-}
-.sso-checkbox input {
-  width: auto;
-  flex: none;
-}
-.sso-note {
+.totp-note {
   border: 1px solid var(--gc-wizard-border);
   border-left-width: 4px;
   border-radius: var(--gc-wizard-radius);
@@ -356,63 +333,76 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   background: var(--gc-wizard-surface);
   font-size: 0.875rem;
 }
-.sso-note--warn {
+.totp-note--warn {
   border-left-color: var(--gc-wizard-warning);
 }
-.sso-note--info {
+.totp-note--info {
   border-left-color: var(--gc-wizard-info);
 }
-.sso-note--danger {
+.totp-note--danger {
   border-left-color: var(--gc-wizard-danger);
 }
-.sso-summary {
+.totp-summary {
   border: 1px solid var(--gc-wizard-border);
   border-radius: var(--gc-wizard-radius);
   padding: 0.5rem 1rem;
   margin: 0.75rem 0;
 }
-.sso-summary dt {
+.totp-summary dt {
   font-weight: 600;
   margin-top: 0.5rem;
 }
-.sso-summary dd {
+.totp-summary dd {
   margin: 0 0 0.25rem;
   color: var(--gc-wizard-text-muted);
   overflow-wrap: break-word;
 }
-.sso-flow {
+.totp-flow {
   display: block;
   width: 100%;
   max-width: 32rem;
   height: auto;
   margin: 0.5rem 0 1rem;
 }
-.sso-flow-box {
+.totp-flow-box {
   fill: var(--gc-wizard-surface);
   stroke: var(--gc-wizard-border);
   stroke-width: 1.5px;
 }
-.sso-flow-text {
+.totp-flow-text {
   fill: var(--gc-wizard-text);
   font-family: var(--gc-wizard-font);
   font-size: 13px;
 }
-.sso-flow-text--muted {
+.totp-flow-text--muted {
   fill: var(--gc-wizard-text-muted);
   font-family: var(--gc-wizard-font);
   font-size: 11px;
 }
-.sso-flow-arrow {
+.totp-flow-text--blocked {
+  fill: var(--gc-wizard-danger);
+  font-family: var(--gc-wizard-font);
+  font-size: 12px;
+  font-weight: 600;
+}
+.totp-flow-arrow {
   stroke: var(--gc-wizard-text-muted);
   stroke-width: 1.5px;
   fill: none;
 }
-.sso-flow-arrow--ok {
+.totp-flow-arrow--ok {
   stroke: var(--gc-wizard-success);
 }
-.sso-flow-marker {
+.totp-flow-arrow--blocked {
+  stroke: var(--gc-wizard-danger);
+  stroke-dasharray: 4 3;
+}
+.totp-flow-marker {
   fill: var(--gc-wizard-text-muted);
 }
-.sso-flow-marker--ok {
+.totp-flow-marker--ok {
   fill: var(--gc-wizard-success);
+}
+.totp-flow-marker--blocked {
+  fill: var(--gc-wizard-danger);
 }

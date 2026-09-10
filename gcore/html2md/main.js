@@ -1,4 +1,4 @@
-// src/gc-wizard-shell.js
+// node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/gc-wizard-shell.js
 var GcWizardShell = class extends HTMLElement {
   static observedAttributes = [
     "can-advance",
@@ -99,7 +99,7 @@ var GcWizardShell = class extends HTMLElement {
   #rebuildIndicator() {
     const steps = this.#steps();
     this.#indicator.innerHTML = "";
-    steps.forEach((step, i) => {
+    steps.forEach((step2, i) => {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "wizard-step-btn";
@@ -107,7 +107,7 @@ var GcWizardShell = class extends HTMLElement {
       if (i < this.#highWaterMark && i !== this.#current) btn.classList.add("wizard-step--complete");
       btn.disabled = i > this.#highWaterMark;
       btn.setAttribute("aria-disabled", String(i > this.#highWaterMark));
-      btn.textContent = step.getAttribute("title") || `Step ${i + 1}`;
+      btn.textContent = step2.getAttribute("title") || `Step ${i + 1}`;
       btn.addEventListener("click", () => this.#go(i, "goto"));
       this.#indicator.append(btn);
     });
@@ -195,7 +195,7 @@ var GcWizardShell = class extends HTMLElement {
 };
 customElements.define("gc-wizard-shell", GcWizardShell);
 
-// src/gc-optional-panels.js
+// node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/gc-optional-panels.js
 var GcOptionalPanels = class extends HTMLElement {
   static observedAttributes = ["multiple"];
   #selected = /* @__PURE__ */ new Set();
@@ -278,7 +278,7 @@ var GcOptionalPanels = class extends HTMLElement {
 };
 customElements.define("gc-optional-panels", GcOptionalPanels);
 
-// src/gc-resource-row.js
+// node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/gc-resource-row.js
 var GcResourceRow = class extends HTMLElement {
   static observedAttributes = [
     "title",
@@ -348,7 +348,7 @@ var GcResourceRow = class extends HTMLElement {
 };
 customElements.define("gc-resource-row", GcResourceRow);
 
-// src/gc-deploy-progress.js
+// node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/gc-deploy-progress.js
 var EMPTY = { status: "idle", plan: null, progress: [], result: null, error: null };
 var STATUS_LABEL = { planning: "Planning\u2026", applying: "Applying\u2026" };
 var GcDeployProgress = class extends HTMLElement {
@@ -420,56 +420,365 @@ function appendCreated(ul, items, noun) {
 }
 customElements.define("gc-deploy-progress", GcDeployProgress);
 
-// example/main.js
-function log(id, msg) {
-  const pre = document.getElementById(id);
-  if (pre) pre.textContent = msg;
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/protocol.js
+var WIZARD_PROTOCOL_VERSION = 1;
+var MAX_MESSAGE_BYTES = 64 * 1024;
+var HANDSHAKE_TIMEOUT_MS = 1e4;
+var INTENT_TIMEOUT_MS = 6e4;
+
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/errors.js
+var WizardError = class extends Error {
+  constructor(code, message) {
+    super(message);
+    this.name = "WizardError";
+    this.code = code;
+  }
+};
+async function optional(fn) {
+  try {
+    return await fn();
+  } catch (err) {
+    if (err instanceof WizardError && err.code === "user_cancelled")
+      return null;
+    throw err;
+  }
 }
-var shell = document.getElementById("demo-shell");
-shell.addEventListener("navigate", (e) => log("shell-log", `navigate: step ${e.detail.from} \u2192 ${e.detail.to} (${e.detail.reason})`));
-shell.addEventListener("navigated", (e) => log("shell-log", `navigated: now on step ${e.detail.to}`));
-shell.addEventListener("finish", () => log("shell-log", "finish fired"));
-shell.addEventListener("cancel", () => log("shell-log", "cancel fired"));
-document.getElementById("demo-panels").addEventListener(
-  "selection-change",
-  (e) => log("panels-log", `selected: ${JSON.stringify(e.detail.selected)}`)
-);
-document.getElementById("demo-multi").addEventListener(
-  "selection-change",
-  (e) => log("multi-log", `selected: ${JSON.stringify(e.detail.selected)}`)
-);
-document.getElementById("demo-row-set").addEventListener(
-  "clear",
-  () => log("row-log", "clear fired on the KV store row")
-);
-document.getElementById("btn-deploy").addEventListener("click", () => {
-  const el = document.getElementById("demo-deploy");
-  el.state = {
-    status: "applying",
-    plan: {
-      planId: "demo",
-      summary: "2 apps, 1 CDN origin, 2 rules",
-      steps: [
-        { action: "fastedge.apps.create", describe: "Create app totp-filter" },
-        { action: "fastedge.apps.create", describe: "Create app totp-app" },
-        { action: "cdn.rules.create", describe: "Route /auth/totp to the app" }
-      ],
-      warnings: ["MFA_AUDIENCE not set on the filter \u2014 Profile B will fail closed"]
-    },
-    progress: [
-      { step: 1, total: 3, describe: "Created totp-filter" },
-      { step: 2, total: 3, describe: "Created totp-app" }
-    ],
-    result: {
-      status: "complete",
-      createdFastedgeApps: [
-        { ref: "filter", id: 101, url: "https://totp-filter.example" },
-        { ref: "app", id: 102, url: "https://totp-app.example" }
-      ]
+
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/version.js
+var SDK_VERSION = "0.0.5";
+
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/sdk.js
+function applyTheme(theme) {
+  if (typeof document === "undefined")
+    return;
+  document.body.classList.remove("gc-theme-light", "gc-theme-dark");
+  document.body.classList.add(`gc-theme-${theme}`);
+}
+var CLIENT_INTENT_TIMEOUT_MS = INTENT_TIMEOUT_MS + 3e4;
+function isRecord(value) {
+  return typeof value === "object" && value !== null;
+}
+var WizardSessionImpl = class {
+  constructor(port) {
+    this.pending = /* @__PURE__ */ new Map();
+    this.eventHandlers = /* @__PURE__ */ new Map();
+    this.nextId = 0;
+    this.disposed = false;
+    this.port = port;
+    this.context = { get: () => this.invoke("context.get", {}) };
+    this.fastedge = {
+      templates: {
+        list: (params) => this.invoke("fastedge.templates.list", params ?? {}),
+        read: (params) => this.invoke("fastedge.templates.read", params)
+      },
+      apps: {
+        list: () => this.invoke("fastedge.apps.list", {}),
+        get: (params) => this.invoke("fastedge.apps.get", params),
+        create: (params) => this.invoke("fastedge.apps.create", params),
+        update: (params) => this.invoke("fastedge.apps.update", params),
+        link: (params) => this.invoke("fastedge.apps.link", params)
+      },
+      secrets: {
+        pickOrCreate: (params) => this.invoke("fastedge.secrets.pickOrCreate", params ?? {}),
+        generateKeypair: (params) => this.invoke("fastedge.secrets.generateKeypair", params)
+      },
+      stores: {
+        pickOrCreate: () => this.invoke("fastedge.stores.pickOrCreate", {})
+      }
+    };
+    this.cdn = {
+      resources: {
+        list: () => this.invoke("cdn.resources.list", {}),
+        pick: () => this.invoke("cdn.resources.pick", {})
+      },
+      origins: {
+        create: (params) => this.invoke("cdn.origins.create", params),
+        list: () => this.invoke("cdn.origins.list", {})
+      },
+      rules: {
+        create: (params) => this.invoke("cdn.rules.create", params),
+        list: (params) => this.invoke("cdn.rules.list", params)
+      }
+    };
+    this.deployment = {
+      plan: (params) => this.invoke("deployment.plan", params),
+      apply: (params) => this.invoke("deployment.apply", params),
+      deploy: async (params, options) => {
+        const plan = await this.invoke("deployment.plan", params);
+        options?.onPlan?.(plan);
+        const off = this.on("deployment.progress", (p) => {
+          options?.onProgress?.(p);
+        });
+        try {
+          return await this.invoke("deployment.apply", { planId: plan.planId });
+        } finally {
+          off();
+        }
+      }
+    };
+    this.wizard = {
+      finish: () => this.invoke("wizard.finish", {})
+    };
+    this.port.onmessage = (event) => this.handlePortMessage(event);
+    this.on("theme.changed", (p) => {
+      const payload = p;
+      applyTheme(payload.theme);
+    });
+  }
+  handlePortMessage(event) {
+    const data = event.data;
+    if (!isRecord(data) || data["v"] !== WIZARD_PROTOCOL_VERSION)
+      return;
+    if (data["type"] === "result") {
+      this.handleResult(data);
+    } else if (data["type"] === "event") {
+      this.handleEvent(data);
     }
-  };
-});
-document.getElementById("btn-theme").addEventListener("click", () => {
-  document.body.classList.toggle("gc-theme-light");
-  document.body.classList.toggle("gc-theme-dark");
-});
+  }
+  handleResult(msg) {
+    const pending = this.pending.get(msg.id);
+    if (!pending)
+      return;
+    this.pending.delete(msg.id);
+    clearTimeout(pending.timer);
+    if (msg.ok) {
+      pending.resolve(msg.data);
+    } else {
+      const err = msg.error ?? { code: "upstream_error", message: "Unknown error" };
+      pending.reject(new WizardError(err.code, err.message));
+    }
+  }
+  handleEvent(msg) {
+    const handlers = this.eventHandlers.get(msg.event);
+    if (!handlers)
+      return;
+    for (const handler of handlers)
+      handler(msg.payload);
+  }
+  invoke(intent, params) {
+    if (this.disposed) {
+      return Promise.reject(new WizardError("protocol_error", "Session is disposed"));
+    }
+    const id = `req-${this.nextId++}`;
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        this.pending.delete(id);
+        reject(new WizardError("timeout", `Intent "${intent}" timed out`));
+      }, CLIENT_INTENT_TIMEOUT_MS);
+      this.pending.set(id, { resolve, reject, timer });
+      const message = { v: WIZARD_PROTOCOL_VERSION, type: "intent", id, intent, params };
+      this.port.postMessage(message);
+    });
+  }
+  on(event, handler) {
+    let handlers = this.eventHandlers.get(event);
+    if (!handlers) {
+      handlers = /* @__PURE__ */ new Set();
+      this.eventHandlers.set(event, handlers);
+    }
+    handlers.add(handler);
+    return () => handlers?.delete(handler);
+  }
+  dispose() {
+    if (this.disposed)
+      return;
+    this.disposed = true;
+    for (const pending of this.pending.values()) {
+      clearTimeout(pending.timer);
+      pending.reject(new WizardError("protocol_error", "Session disposed"));
+    }
+    this.pending.clear();
+    this.eventHandlers.clear();
+    this.port.onmessage = null;
+    this.port.close();
+  }
+};
+function connect(options) {
+  if (typeof window === "undefined") {
+    return Promise.reject(new WizardError("protocol_error", "connect() requires a browser environment"));
+  }
+  const { expectedHostOrigin, handshakeTimeoutMs = HANDSHAKE_TIMEOUT_MS } = options;
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let port;
+    const timeoutTimer = setTimeout(() => {
+      finish(() => reject(new WizardError("timeout", "Handshake did not complete in time")));
+    }, handshakeTimeoutMs);
+    function finish(fn) {
+      if (settled)
+        return;
+      settled = true;
+      clearTimeout(timeoutTimer);
+      window.removeEventListener("message", onWindowMessage);
+      fn();
+    }
+    function onWindowMessage(event) {
+      if (settled)
+        return;
+      if (event.source !== window.parent)
+        return;
+      if (event.origin !== expectedHostOrigin)
+        return;
+      const data = event.data;
+      if (!isRecord(data) || data["type"] !== "init")
+        return;
+      if (data["v"] !== WIZARD_PROTOCOL_VERSION) {
+        finish(() => reject(new WizardError("protocol_error", `Protocol version mismatch: host=${String(data["v"])}, sdk=${WIZARD_PROTOCOL_VERSION}`)));
+        return;
+      }
+      const capturedPort = event.ports.length === 1 ? event.ports[0] : void 0;
+      if (!capturedPort)
+        return;
+      port = capturedPort;
+      capturedPort.onmessage = onPortMessage;
+      capturedPort.start();
+    }
+    function onPortMessage(event) {
+      if (settled)
+        return;
+      const data = event.data;
+      if (!isRecord(data) || data["type"] !== "hello")
+        return;
+      if (data["v"] !== WIZARD_PROTOCOL_VERSION) {
+        finish(() => reject(new WizardError("protocol_error", `Protocol version mismatch: host=${String(data["v"])}, sdk=${WIZARD_PROTOCOL_VERSION}`)));
+        return;
+      }
+      const hello = data;
+      applyTheme(hello.hostContext.theme ?? "light");
+      if (typeof document !== "undefined") {
+        document.documentElement.lang = hello.hostContext.locale ?? "en";
+      }
+      const ready = { v: WIZARD_PROTOCOL_VERSION, type: "ready", sdkVersion: SDK_VERSION };
+      port.postMessage(ready);
+      finish(() => resolve(new WizardSessionImpl(port)));
+    }
+    window.addEventListener("message", onWindowMessage);
+  });
+}
+
+// src/main.js
+var hostOrigin = new URLSearchParams(location.search).get("hostOrigin") || "https://portal.gcore.com";
+var main = document.querySelector("main");
+var shell = document.querySelector("gc-wizard-shell");
+var appNameInput = document.getElementById("app-name");
+var cdnRow = document.getElementById("cdn-row");
+var pickButton = document.querySelector("[data-action=pick-resource]");
+var deployProgress = document.getElementById("deploy-progress");
+var reviewName = document.getElementById("review-name");
+var reviewCdn = document.getElementById("review-cdn");
+function setError(msg) {
+  if (msg) shell.setAttribute("error", msg);
+  else shell.removeAttribute("error");
+}
+var pickedResource = null;
+var step = 0;
+var deployState = { status: "idle", plan: null, progress: [], result: null, error: null };
+function setDeployState(patch) {
+  deployState = { ...deployState, ...patch };
+  deployProgress.state = deployState;
+  shell.toggleAttribute("finished", deployState.status === "done");
+  updateCanAdvance();
+}
+function updateCanAdvance() {
+  let ready;
+  if (step === 0) ready = appNameInput.value.trim().length > 0;
+  else if (step === 1) ready = !!pickedResource;
+  else ready = deployState.status === "idle" || deployState.status === "error";
+  shell.toggleAttribute("can-advance", ready);
+  setError("");
+}
+function updateCdnRow() {
+  cdnRow.toggleAttribute("set", !!pickedResource);
+  if (pickedResource) cdnRow.setAttribute("value", `${pickedResource.cname} (#${pickedResource.id})`);
+  else cdnRow.removeAttribute("value");
+}
+function populateReview() {
+  reviewName.textContent = appNameInput.value.trim();
+  reviewCdn.textContent = pickedResource ? `${pickedResource.cname} (#${pickedResource.id})` : "\u2014";
+}
+var session;
+try {
+  session = await connect({ expectedHostOrigin: hostOrigin });
+  const ctx = await session.context.get();
+  document.body.classList.add(ctx.theme);
+  main.hidden = false;
+  if (ctx.launchTemplateId === null) {
+    setError("This wizard must be launched from the html2md template.");
+    shell.removeAttribute("can-advance");
+  } else {
+    updateCanAdvance();
+    pickButton.addEventListener("click", async () => {
+      pickButton.disabled = true;
+      try {
+        const r = await optional(() => session.cdn.resources.pick());
+        if (r) {
+          pickedResource = r;
+          updateCdnRow();
+          updateCanAdvance();
+        }
+      } catch (err) {
+        console.error("CDN resource pick failed:", err);
+      } finally {
+        pickButton.disabled = false;
+      }
+    });
+    cdnRow.addEventListener("clear", () => {
+      pickedResource = null;
+      updateCdnRow();
+      updateCanAdvance();
+    });
+    appNameInput.addEventListener("input", updateCanAdvance);
+    shell.addEventListener("navigated", ({ detail: { to } }) => {
+      step = to;
+      if (step === 2) populateReview();
+      updateCanAdvance();
+    });
+    shell.addEventListener("finish", async () => {
+      if (!pickedResource) return;
+      setDeployState({ status: "planning", plan: null, progress: [], result: null, error: null });
+      shell.removeAttribute("can-advance");
+      setError("");
+      try {
+        const result = await session.deployment.deploy(
+          {
+            fastedgeApps: [
+              {
+                ref: "html2md-filter",
+                name: `${appNameInput.value.trim()}-filter`,
+                api_type: "proxy-wasm",
+                source: { fromTemplateId: ctx.launchTemplateId }
+              }
+            ],
+            cdnResourceId: pickedResource.id,
+            cdnResourceFastedgeHandlers: {
+              on_request_headers: { appRef: "html2md-filter" },
+              on_response_headers: { appRef: "html2md-filter" },
+              on_response_body: { appRef: "html2md-filter" }
+            }
+          },
+          {
+            onPlan: (plan) => setDeployState({ status: "applying", plan }),
+            onProgress: (ev) => setDeployState({ progress: [...deployState.progress, ev] })
+          }
+        );
+        setDeployState({ status: "done", result });
+      } catch (err) {
+        if (err instanceof WizardError && err.code === "user_cancelled") {
+          setDeployState({ status: "idle" });
+        } else {
+          setDeployState({ status: "error", error: err.message });
+          console.error(err);
+        }
+      } finally {
+        updateCanAdvance();
+      }
+    });
+    shell.addEventListener("wizard-finished", () => session.wizard.finish());
+  }
+} catch (err) {
+  const p = document.createElement("p");
+  p.className = "wizard-error";
+  p.textContent = `${err.code ?? "error"}: ${err.message}`;
+  document.body.replaceChildren(p);
+}
+window.addEventListener("beforeunload", () => session?.dispose());

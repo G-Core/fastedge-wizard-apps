@@ -1,4 +1,4 @@
-/* node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/styles.css */
+/* node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/styles.css */
 gc-wizard-shell {
   display: block;
   position: relative;
@@ -297,112 +297,51 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
 }
 
 /* src/styles.css */
-.totp-lede {
+.html2md-lede {
   color: var(--gc-wizard-text-muted);
   max-width: 60ch;
 }
-.totp-lede code {
-  white-space: nowrap;
-}
-.totp-field {
-  display: block;
-  margin-bottom: 1rem;
-  max-width: 60ch;
-}
-.totp-field > span {
-  display: block;
-  font-weight: 500;
-  margin-bottom: 0.25rem;
-}
-.totp-field input,
-.totp-field select {
-  width: 100%;
-}
-.totp-hint {
-  display: block;
-  color: var(--gc-wizard-text-muted);
-  font-size: 0.8125rem;
-  margin-top: 0.25rem;
-}
-.totp-note {
+.html2md-note {
   border: 1px solid var(--gc-wizard-border);
   border-left-width: 4px;
+  border-left-color: var(--gc-wizard-info);
   border-radius: var(--gc-wizard-radius);
   padding: 0.75rem 1rem;
   margin: 1rem 0;
   background: var(--gc-wizard-surface);
   font-size: 0.875rem;
 }
-.totp-note--warn {
-  border-left-color: var(--gc-wizard-warning);
+.html2md-field {
+  display: block;
+  margin-bottom: 1rem;
+  max-width: 60ch;
 }
-.totp-note--info {
-  border-left-color: var(--gc-wizard-info);
+.html2md-field > span:first-child {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
 }
-.totp-note--danger {
-  border-left-color: var(--gc-wizard-danger);
+.html2md-field input {
+  width: 100%;
 }
-.totp-summary {
+.html2md-hint {
+  display: block;
+  color: var(--gc-wizard-text-muted);
+  font-size: 0.8125rem;
+  margin-top: 0.25rem;
+}
+.html2md-summary {
   border: 1px solid var(--gc-wizard-border);
   border-radius: var(--gc-wizard-radius);
   padding: 0.5rem 1rem;
   margin: 0.75rem 0;
 }
-.totp-summary dt {
+.html2md-summary dt {
   font-weight: 600;
   margin-top: 0.5rem;
 }
-.totp-summary dd {
+.html2md-summary dd {
   margin: 0 0 0.25rem;
   color: var(--gc-wizard-text-muted);
   overflow-wrap: break-word;
-}
-.totp-flow {
-  display: block;
-  width: 100%;
-  max-width: 32rem;
-  height: auto;
-  margin: 0.5rem 0 1rem;
-}
-.totp-flow-box {
-  fill: var(--gc-wizard-surface);
-  stroke: var(--gc-wizard-border);
-  stroke-width: 1.5px;
-}
-.totp-flow-text {
-  fill: var(--gc-wizard-text);
-  font-family: var(--gc-wizard-font);
-  font-size: 13px;
-}
-.totp-flow-text--muted {
-  fill: var(--gc-wizard-text-muted);
-  font-family: var(--gc-wizard-font);
-  font-size: 11px;
-}
-.totp-flow-text--blocked {
-  fill: var(--gc-wizard-danger);
-  font-family: var(--gc-wizard-font);
-  font-size: 12px;
-  font-weight: 600;
-}
-.totp-flow-arrow {
-  stroke: var(--gc-wizard-text-muted);
-  stroke-width: 1.5px;
-  fill: none;
-}
-.totp-flow-arrow--ok {
-  stroke: var(--gc-wizard-success);
-}
-.totp-flow-arrow--blocked {
-  stroke: var(--gc-wizard-danger);
-  stroke-dasharray: 4 3;
-}
-.totp-flow-marker {
-  fill: var(--gc-wizard-text-muted);
-}
-.totp-flow-marker--ok {
-  fill: var(--gc-wizard-success);
-}
-.totp-flow-marker--blocked {
-  fill: var(--gc-wizard-danger);
 }
