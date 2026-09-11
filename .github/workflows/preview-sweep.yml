@@ -1,4 +1,4 @@
-# Weekly backstop for wizard preview branches: deletes any preview/<branch>
+# Monthly backstop for wizard preview branches: deletes any preview/<branch>
 # whose source branch no longer exists (a missed delete event), or whose
 # source branch hasn't been pushed to in 90+ days (parked but never deleted).
 #
@@ -9,39 +9,39 @@
 name: Sweep stale wizard previews
 
 on:
-  schedule:
-    - cron: '0 6 * * 1' # every Monday 06:00 UTC
-  workflow_dispatch:
+    schedule:
+        - cron: '0 6 1-7 * 1' # first Monday of each month at 06:00 UTC
+    workflow_dispatch:
 
 permissions:
-  contents: write
+    contents: write
 
 jobs:
-  sweep:
-    runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      REPO: ${{ github.repository }}
-    steps:
-      - name: Delete orphaned or stale preview branches
-        run: |
-          set -euo pipefail
-          cutoff=$(date -u -d '90 days ago' +%s)
+    sweep:
+        runs-on: ubuntu-latest
+        env:
+            GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            REPO: ${{ github.repository }}
+        steps:
+            - name: Delete orphaned or stale preview branches
+              run: |
+                  set -euo pipefail
+                  cutoff=$(date -u -d '90 days ago' +%s)
 
-          gh api "repos/${REPO}/branches" --paginate --jq '.[].name' | (grep '^preview/' || true) | while read -r preview; do
-            source_branch="${preview#preview/}"
+                  gh api "repos/${REPO}/branches" --paginate --jq '.[].name' | (grep '^preview/' || true) | while read -r preview; do
+                    source_branch="${preview#preview/}"
 
-            if ! gh api "repos/${REPO}/branches/${source_branch}" > /dev/null 2>&1; then
-              echo "Deleting orphaned preview (source branch gone): ${preview}"
-              gh api -X DELETE "repos/${REPO}/git/refs/heads/${preview}"
-              continue
-            fi
+                    if ! gh api "repos/${REPO}/branches/${source_branch}" > /dev/null 2>&1; then
+                      echo "Deleting orphaned preview (source branch gone): ${preview}"
+                      gh api -X DELETE "repos/${REPO}/git/refs/heads/${preview}"
+                      continue
+                    fi
 
-            last_commit_date=$(gh api "repos/${REPO}/branches/${source_branch}" --jq '.commit.commit.committer.date')
-            last_commit_epoch=$(date -u -d "${last_commit_date}" +%s)
+                    last_commit_date=$(gh api "repos/${REPO}/branches/${source_branch}" --jq '.commit.commit.committer.date')
+                    last_commit_epoch=$(date -u -d "${last_commit_date}" +%s)
 
-            if [ "${last_commit_epoch}" -lt "${cutoff}" ]; then
-              echo "Deleting stale preview (source branch idle 90+ days): ${preview}"
-              gh api -X DELETE "repos/${REPO}/git/refs/heads/${preview}"
-            fi
-          done
+                    if [ "${last_commit_epoch}" -lt "${cutoff}" ]; then
+                      echo "Deleting stale preview (source branch idle 90+ days): ${preview}"
+                      gh api -X DELETE "repos/${REPO}/git/refs/heads/${preview}"
+                    fi
+                  done
