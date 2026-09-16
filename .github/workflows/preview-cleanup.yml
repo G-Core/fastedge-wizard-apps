@@ -6,7 +6,7 @@
 # as it exists on the default branch, so a deleted feature branch can't ship
 # its own (missing) copy of this guard the way `workflow_dispatch` could.
 #
-# Backstop: preview-sweep.yml (weekly) catches anything this misses.
+# Backstop: preview-sweep.yml (monthly) catches anything this misses.
 name: Clean up wizard preview on branch delete
 
 on:

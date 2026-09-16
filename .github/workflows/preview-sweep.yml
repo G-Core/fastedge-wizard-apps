@@ -10,7 +10,11 @@ name: Sweep stale wizard previews
 
 on:
     schedule:
-        - cron: '0 6 1-7 * 1' # first Monday of each month at 06:00 UTC
+        # Every Monday 06:00 UTC; the job itself bails unless it's the first one
+        # of the month. POSIX cron ORs day-of-month with day-of-week when both are
+        # restricted, so '1-7 * 1' would fire on days 1-7 AND every Monday (~11
+        # runs/month) — "first Monday" can't be expressed in cron alone.
+        - cron: '0 6 * * 1'
     workflow_dispatch:
 
 permissions:
@@ -22,10 +26,20 @@ jobs:
         env:
             GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
             REPO: ${{ github.repository }}
+            EVENT_NAME: ${{ github.event_name }}
         steps:
             - name: Delete orphaned or stale preview branches
               run: |
                   set -euo pipefail
+
+                  # See the cron comment above: we're woken every Monday, so drop the
+                  # ones that aren't the month's first. workflow_dispatch is exempt —
+                  # a manual sweep should run on the day you ask for it.
+                  if [ "${EVENT_NAME}" = 'schedule' ] && [ "$(date -u +%-d)" -gt 7 ]; then
+                    echo "Not the first Monday of the month — skipping sweep."
+                    exit 0
+                  fi
+
                   cutoff=$(date -u -d '90 days ago' +%s)
 
                   gh api "repos/${REPO}/branches" --paginate --jq '.[].name' | (grep '^preview/' || true) | while read -r preview; do
