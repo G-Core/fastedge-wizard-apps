@@ -7,6 +7,7 @@
         "bump:sdk": "node scripts/bump-sdk.mjs",
         "lint:css": "stylelint \"wizards/**/src/**/*.css\" \"packages/*/src/**/*.css\" && node scripts/check-tokens.mjs",
         "lint:css:fix": "stylelint \"wizards/**/src/**/*.css\" \"packages/*/src/**/*.css\" --fix",
+        "test": "pnpm run lint:css && pnpm run build && pnpm -r --if-present run test && pnpm run test:e2e",
         "test:e2e": "playwright test",
         "snapshots:e2e": "playwright test --update-snapshots"
     },
