@@ -203,7 +203,7 @@ function Wizard({ session, ctx, filterT, appT }) {
                           ref: 'filter-rule',
                           name: `${f.name}-mfa-filter`,
                           rule: '^/.*',
-                          weight: 1,
+                          weight: 10,
                           fastedgeFilter: { appRef: 'filter', hook: 'on_request_headers', interruptOnError: true },
                       },
                   ]
@@ -212,7 +212,7 @@ function Wizard({ session, ctx, filterT, appT }) {
                           ref: `filter-rule-${i}`,
                           name: `${f.name}-mfa-filter-${i + 1}`,
                           rule: `^${escapeRegex(path)}`,
-                          weight: 1,
+                          weight: 10,
                           fastedgeFilter: { appRef: 'filter', hook: 'on_request_headers', interruptOnError: true },
                       }));
 
@@ -240,12 +240,15 @@ function Wizard({ session, ctx, filterT, appT }) {
             cdnResourceId: f.cdn.id,
             newCdnOrigins: [{ ref: 'app-origin', name: `${f.name}-app-origin`, appRef: 'app' }],
             newCdnRules: [
-                // Route the login/challenge paths to the app origin.
+                // Route the login/challenge paths to the app origin. Must outrank the filter
+                // rule (lower weight = higher priority): under "entire site" the filter's
+                // `^/.*` also matches the auth prefix, and it carries no originGroup — so if
+                // it won, the auth paths would fall through to the default origin (404).
                 {
                     ref: 'app-route',
                     name: `${f.name}-auth-route`,
                     rule: `^${escapeRegex(f.authPrefix)}`,
-                    weight: 10,
+                    weight: 1,
                     originGroupRef: 'app-origin',
                 },
                 ...filterRules,

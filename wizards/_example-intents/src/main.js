@@ -343,7 +343,7 @@ async function demo() {
                 ref: 'routing-rule',
                 name: 'example-route-all',
                 rule: '^/.*',       // regex — matches every path (the CDN API rejects '^/', a rule of only slashes)
-                weight: 10,         // lower weight = lower priority (processed last)
+                weight: 10,         // higher weight = LOWER priority (this catch-all is matched last)
                 // originGroupRef points at a newCdnOrigins[*].ref.
                 // Resolved to the created origin group id during apply.
                 originGroupRef: 'http-origin',

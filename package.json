@@ -7,15 +7,16 @@
         "bump:sdk": "node scripts/bump-sdk.mjs",
         "lint:css": "stylelint \"wizards/**/src/**/*.css\" \"packages/*/src/**/*.css\" && node scripts/check-tokens.mjs",
         "lint:css:fix": "stylelint \"wizards/**/src/**/*.css\" \"packages/*/src/**/*.css\" --fix",
+        "test": "pnpm run lint:css && pnpm run build && pnpm -r --if-present run test && pnpm run test:e2e",
         "test:e2e": "playwright test",
         "snapshots:e2e": "playwright test --update-snapshots"
     },
     "devDependencies": {
-        "@axe-core/playwright": "^4.12.1",
+        "@axe-core/playwright": "^4.13.0",
         "@gcoredev/fastedge-wizard-sdk": "latest",
-        "@playwright/test": "^1.61.1",
+        "@playwright/test": "^1.63.0",
         "npm-run-all2": "9.0.2",
-        "stylelint": "^17.14.0",
+        "stylelint": "^17.15.0",
         "stylelint-config-standard": "^40.0.0"
     }
 }

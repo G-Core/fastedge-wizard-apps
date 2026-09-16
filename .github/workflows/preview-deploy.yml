@@ -6,7 +6,7 @@
 # `main` -> `gh-pages` (deploy.yml) is trusted for a shared template.
 #
 # Lifecycle: preview-cleanup.yml deletes preview/<branch> when <branch> is
-# deleted; preview-sweep.yml is the weekly backstop for anything that misses
+# deleted; preview-sweep.yml is the monthly backstop for anything that misses
 # (orphaned or long-idle previews).
 name: Publish wizard previews
 

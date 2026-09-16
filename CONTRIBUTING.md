@@ -40,7 +40,7 @@ your fork's `.github/workflows/` directory:
 |---|---|
 | `preview-deploy.yml` | Builds all wizards on every push and publishes to `preview/<branch>` in your fork via jsDelivr |
 | `preview-cleanup.yml` | Deletes `preview/<branch>` the moment its source branch is deleted (e.g. after a PR merge) |
-| `preview-sweep.yml` | Weekly backstop — removes any `preview/*` branch whose source branch is gone or has been idle for 90+ days |
+| `preview-sweep.yml` | Monthly backstop — removes any `preview/*` branch whose source branch is gone or has been idle for 90+ days |
 
 Copy all three, not just the deploy workflow. Without the cleanup pair, orphaned
 `preview/*` branches accumulate in your fork indefinitely.
