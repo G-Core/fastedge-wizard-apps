@@ -10,8 +10,15 @@ export function StepCdn({ session, f, set }) {
             const r = await optional(() => session.cdn.resources.pick());
             if (r) {
                 const derived = f.cdn ? `https://${f.cdn.cname}` : '';
-                const audience = (!f.audience || f.audience === derived) ? `https://${r.cname}` : f.audience;
-                set({ cdn: r, audience });
+                const origin = `https://${r.cname}`;
+                const audience = (!f.audience || f.audience === derived) ? origin : f.audience;
+                // Seed the protected site's own origin as an allowed ?redirect= target.
+                // Without it every absolute redirect back to this very domain is dropped
+                // and login always lands on "/". Self-origin is not an open redirect —
+                // anything beyond it stays a deliberate choice in the Routing step.
+                const allowedOrigins =
+                    (!f.allowedOrigins || f.allowedOrigins === derived) ? origin : f.allowedOrigins;
+                set({ cdn: r, audience, allowedOrigins });
             }
         } catch (err) {
             console.error('CDN resource pick failed:', err);
@@ -32,7 +39,11 @@ export function StepCdn({ session, f, set }) {
                 set={!!f.cdn}
                 onClear={() => {
                     const derived = `https://${f.cdn.cname}`;
-                    set({ cdn: null, audience: f.audience === derived ? '' : f.audience });
+                    set({
+                        cdn: null,
+                        audience: f.audience === derived ? '' : f.audience,
+                        allowedOrigins: f.allowedOrigins === derived ? '' : f.allowedOrigins,
+                    });
                 }}>
                 <button onClick={pick} disabled={busy}>Select resource</button>
             </ResourceRow>
