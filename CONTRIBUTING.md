@@ -74,8 +74,9 @@ Because your customers then run whatever lands on those branches, the setup matt
    on every merge to `main`, publishes to `gh-pages` and purges jsDelivr for your repo. It
    needs no edits. The workflows run in **your** fork, on GitHub-hosted runners under your
    account (free for public repos), using only the fork's automatic `GITHUB_TOKEN`. They are
-   your CI: keep `wizard-checks.yml` and make it a required check on `main`, because Gcore can't
-   enforce it on your repo.
+   your CI: keep `wizard-checks.yml`, but remove its `pull_request.paths` filter before
+   making its job checks required on `main`; otherwise documentation-only PRs will wait
+   indefinitely for required checks. Gcore can't enforce CI on your repo.
 3. **Protect `main` and `gh-pages`.** Require PR review on `main`, and allow only the deploy
    workflow to push `gh-pages`.
 4. **Put your wizards under `wizards/<org>-<account-id>/`** so syncing from upstream never
