@@ -1,0 +1,27 @@
+/* Example page layout — supplements wizard.css base + wizard-step-kit/src/styles.css */
+main {
+    max-width: 52rem;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+section {
+    margin-bottom: 3rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--gc-wizard-border);
+}
+
+.event-log {
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    color: var(--gc-wizard-text-muted);
+    min-height: 1.5em;
+}
+
+.theme-toggle {
+    margin-top: 2rem;
+    text-align: right;
+}
