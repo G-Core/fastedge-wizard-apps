@@ -165,13 +165,27 @@ non-empty. See `mock-host/stubs.js` in the installed SDK for the defaults.
 The mock host validates all fixture files against the SDK's Zod schemas at
 startup and warns on any mismatch. Pass `--validate-only` for a CI-safe check.
 
+**Brand preview (rebranded portals).** A white-label portal sends its brand colour to the
+wizard as `--gc-wizard-brand`. To preview it, put a `wizard-brand.json` at the repo root:
+
+```json
+{ "brand": "#ff7900", "brandDark": "#ff9a40" }
+```
+
+The mock host finds the nearest one above the wizard, so one file covers every wizard, and
+sends it over the bridge exactly as the portal does. `brandDark` is optional.
+`--brand '#…'` / `--brand-dark '#…'` override it for one run (quote the `#`). It's a local
+preview file: this repo doesn't ship one, so keep it out of PRs. Details: SDK
+`docs/runtime-rules.md` §Theme, locale and branding.
+
 ---
 
 ## Token Quick-Reference — `--gc-wizard-*` Subset
 
 Use these purpose-named tokens in wizard CSS. Prefer them over the raw 379-token set.
 The full set (all `--gc-*` tokens) is allowed and still linted — but these 11 cover
-the common cases and survive reseller theming unchanged.
+the common cases. On a rebranded portal only `--gc-wizard-brand` changes (see Mock host
+§Brand preview); the rest stay as listed.
 
 | Purpose | Token | Maps to |
 |---------|-------|---------|
@@ -215,12 +229,12 @@ Slash commands (`.claude/skills/`) — invoke from the `fastedge-wizard-apps/` w
 
 ---
 
-## Partner repos
+## Forks
 
-The proxy can allow-list additional source repos, usually forks of this one. A fork serves
-**owned** templates from any ref (e.g. `preview/<branch>`). A **trusted partner** fork can also
-serve **shared** templates, but only from `main` / `gh-pages`. See `CONTRIBUTING.md`
-§Trusted partner repos for the setup.
+The proxy fetches only from allow-listed repos; a contributor's fork can be allow-listed for
+preview testing. A fork serves **owned** templates from any ref (e.g. `preview/<branch>`).
+Shared templates load only from this repo's `main` / `gh-pages`. See `CONTRIBUTING.md` §How
+your fork can serve wizards.
 
 ---
 

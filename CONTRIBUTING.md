@@ -58,40 +58,7 @@ WIZARD_SOURCE_CONFIG={"repo":"<your-org>/FastEdge-Wizard-apps","ref":"preview/<b
 ```
 
 This only works for templates **you own**. Shared templates are always blocked from fork
-refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`,
-or from a trusted partner repo (below).
-
-### Trusted partner repos
-
-By agreement with Gcore, a partner that shares templates with its own customers can serve
-those shared templates from its fork, without merging upstream. Gcore trusts the fork's
-`main` / `gh-pages` refs exactly like this repo's; `preview/*` refs stay owned-template-only.
-Because your customers then run whatever lands on those branches, the setup matters:
-
-1. **Fork** this repo into your org and keep the name you'll use in `WIZARD_SOURCE_CONFIG`.
-   Send Gcore the exact `<org>/<repo>`. The proxy matches it **case-sensitively**.
-2. **Enable GitHub Actions** in the fork (forks start with them off). `deploy.yml` then builds
-   on every merge to `main`, publishes to `gh-pages` and purges jsDelivr for your repo. It
-   needs no edits. The workflows run in **your** fork, on GitHub-hosted runners under your
-   account (free for public repos), using only the fork's automatic `GITHUB_TOKEN`. They are
-   your CI: keep `wizard-checks.yml`, but remove its `pull_request.paths` filter before
-   making its job checks required on `main`; otherwise documentation-only PRs will wait
-   indefinitely for required checks. Gcore can't enforce CI on your repo.
-3. **Protect `main` and `gh-pages`.** Require PR review on `main`, and allow only the deploy
-   workflow to push `gh-pages`.
-4. **Put your wizards under `wizards/<org>-<account-id>/`** so syncing from upstream never
-   conflicts with ours.
-5. **Sync upstream regularly** (GitHub's **Sync fork**, or `git fetch upstream && git merge
-   upstream/main`) to pick up template, CI and shared-package changes.
-
-Then point your shared templates at your fork:
-
-```
-WIZARD_SOURCE_CONFIG={"repo":"<your-org>/<your-repo>","ref":"gh-pages","wizardDir":"<your-org>-<account-id>/<wizard>","cdn":"jsdelivr"}
-```
-
-**Known limitation for rebranded portals:** a white-label portal's brand colours don't
-reach the wizard iframe yet, so wizards render in the default Gcore palette there.
+refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`.
 
 ---
 
@@ -173,6 +140,8 @@ Open http://localhost:9999 — you get a browser dev-tools-style panel next to y
 **Fixture data** (optional but recommended for realistic mock data): create a `fixtures/` directory next to `src/`. Fixture files are namespaced by resource group — `fastedge/templates.json`, `fastedge/apps.json`, `fastedge/secrets.json`, `fastedge/stores.json`, `cdn/resources.json`, `cdn/origins.json`, `cdn/rules.json` — matching the intent namespace. The SDK validates these against its schemas on startup.
 
 **You only need to override `fastedge/templates.json`.** The mock host ships built-in stub data for every other resource group (CDN resources, stores, secrets, apps, origins, rules) — pickers and generate/create stubs work end-to-end with no fixture files. A group's fixture file overrides the stubs only when it exists and is non-empty. See `mock-host/stubs.js` in the installed SDK for the defaults.
+
+**Brand preview** (optional): on a rebranded portal, the portal's brand colour reaches your wizard as `--gc-wizard-brand`. To see your wizard in a given brand colour, create a `wizard-brand.json` at the repo root — `{ "brand": "#ff7900", "brandDark": "#ff9a40" }`, `brandDark` optional — and every wizard's `pnpm run dev` sends it the way the portal does. Keep it out of your PR. For a one-off check, pass `--brand '#ff7900'` to the dev command instead (quote the `#`). Details are in the SDK's `docs/runtime-rules.md` §Theme.
 
 If you are a Gcore team member with portal access, you can pull real data from a live account into your fixture files with the `/sync-wizard-fixtures` skill (Claude Code). Run it from `wizards/<your-wizard>/` — it fetches live templates, apps, secrets, stores, and CDN resources, then writes fudged (safe-to-commit) fixture files. This is the fastest way to get representative data without hand-crafting JSON.
 
