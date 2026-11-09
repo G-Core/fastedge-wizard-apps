@@ -323,7 +323,9 @@ const templates = await session.fastedge.templates.list();
 No `fetch()`, no `XMLHttpRequest`, no WebSocket.
 
 That's one of several sandbox limits. There's also no inline `<script>`/`<style>`, no
-`localStorage`, no `alert`, no popups, and `<form>` submission is blocked. Read the SDK's
+`localStorage`, no `alert`, no popups, and `<form>` submission is blocked. Images, icons and
+fonts must ship inside your wizard (relative paths or inline `<svg>`); remote URLs and `data:`
+URIs are blocked. Read the SDK's
 [`docs/runtime-rules.md`](https://github.com/G-Core/fastedge-wizard-sdk/blob/main/docs/runtime-rules.md)
 before you build. It also explains the managed set (`out_of_scope`), re-entry from a deployed
 app, reserved `WIZARD_*` env keys and deployment rollback.
