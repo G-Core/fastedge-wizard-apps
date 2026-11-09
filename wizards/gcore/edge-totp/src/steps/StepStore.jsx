@@ -23,12 +23,12 @@ export function StepStore({ session, f, set }) {
             <p className="totp-lede">
                 A &quot;seed&quot; is the secret each user&apos;s authenticator app (Google
                 Authenticator, Authy, etc) is set up with — it&apos;s what generates their 6-digit
-                codes, and it&apos;s per-user. Seeds live in Gcore Edge Storage: written once at
+                codes, and it&apos;s per-user. Seeds live in Edge Storage: written once at
                 enrollment, read every time that user completes a challenge.
             </p>
             <Note kind="warn">
                 Use a <strong>dedicated</strong> Edge Storage instance. Seeds are stored masked —
-                reading them back through the Gcore API (including with the token you add next)
+                reading them back through the API (including with the token you add next)
                 only ever returns the masked value, never the real seed; only this app&apos;s own
                 code can read a seed in the clear. That token still has <strong>write</strong>
                 access to everything in the store, though, so anyone holding it could overwrite a

@@ -26,7 +26,7 @@ export function StepSecrets({ session, f, set }) {
     async function selectToken() {
         setBusy('gcore');
         try {
-            const rs = await optional(() => session.fastedge.secrets.pickOrCreate({ label: 'Gcore API token' }));
+            const rs = await optional(() => session.fastedge.secrets.pickOrCreate({ label: 'Platform API token' }));
             if (rs && rs.length) set({ gcore: rs[0] });
         } catch (err) {
             console.error('Gcore API token select failed:', err);
@@ -42,7 +42,7 @@ export function StepSecrets({ session, f, set }) {
                 (<strong>session signing key</strong>), one proves your origin&apos;s password
                 check to this app (<strong>handoff key</strong>), one gates who can enrol a user
                 (<strong>enroll API key</strong>), and one lets this app read/write the seed store
-                (<strong>Gcore API token</strong>). Generate each below — the session key is
+                (<strong>Platform API token</strong>). Generate each below — the session key is
                 <strong> shared</strong>, created once and bound to both apps.{generatedElsewhere}
             </p>
             <ResourceRow title="Session signing key (shared)"
@@ -63,7 +63,7 @@ export function StepSecrets({ session, f, set }) {
                 <button onClick={generate('enroll', 'Enroll API key', `${f.name}-enroll-api-key`, 'Bearer token for /enroll')}
                     disabled={!!busy}>Select</button>
             </ResourceRow>
-            <ResourceRow title="Gcore API token"
+            <ResourceRow title="Platform API token"
                 sub="Real token with Edge Storage write access — select an existing secret or create one." set={!!f.gcore}
                 value={f.gcore?.name} onClear={() => set({ gcore: null })}>
                 <button onClick={selectToken} disabled={!!busy}>Select</button>

@@ -7,7 +7,7 @@ export function StepBranding({ f, set }) {
             <h2 tabIndex={-1}>Branding</h2>
             <p className="sso-lede">
                 Customise the hosted login page. Leave unselected for the default unstyled
-                Gcore page.
+                page.
             </p>
             <OptionalPanels onChange={(sel) => set({ brandMode: sel[0] || 'none' })}>
                 <WizardPanel value="custom" label="Add branding">
