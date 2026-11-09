@@ -97,7 +97,7 @@ types are included.
 
 | Tag / ref | Notes |
 |-----------|-------|
-| `v0.0.8` | Mock-host + theme/locale bridge shipped. Note: the SDK `package.json` `version` field currently reads `0.0.1` and lags the tags — reconcile before the first external tag pin. |
+| npm `latest` | Current release — `npm view @gcoredev/fastedge-wizard-sdk version`. Each `vX.Y.Z` tag publishes to npm and CI rejects a tag that doesn't match the SDK's `package.json`, so tag, `package.json` and npm always agree. Release notes: the SDK repo's tags/commits. |
 | `main` | Development — do not pin committed wizards to this |
 
 > Wizards depend on the npm package (`"@gcoredev/fastedge-wizard-sdk": "latest"` for starters/examples; a production wizard can pin a published version). A `github:…#<tag>` pin also works.
