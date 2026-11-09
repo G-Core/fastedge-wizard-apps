@@ -90,8 +90,15 @@ Then point your shared templates at your fork:
 WIZARD_SOURCE_CONFIG={"repo":"<your-org>/<your-repo>","ref":"gh-pages","wizardDir":"<your-org>-<account-id>/<wizard>","cdn":"jsdelivr"}
 ```
 
-**Known limitation for rebranded portals:** a white-label portal's brand colours don't
-reach the wizard iframe yet, so wizards render in the default Gcore palette there.
+**Rebranded portals:** your portal's brand colour reaches every wizard as `--gc-wizard-brand`.
+To preview it locally, commit a `wizard-brand.json` at your fork's root:
+
+```json
+{ "brand": "#ff7900", "brandDark": "#ff9a40" }
+```
+
+Every wizard's `pnpm run dev` picks it up, so you set it once. Upstream doesn't ship this file, so
+it never conflicts when you sync. Details are in the SDK's `docs/runtime-rules.md` §Theme.
 
 ---
 
