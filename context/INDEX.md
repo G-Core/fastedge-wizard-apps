@@ -174,9 +174,9 @@ wizard as `--gc-wizard-brand`. To preview it, put a `wizard-brand.json` at the r
 
 The mock host finds the nearest one above the wizard, so one file covers every wizard, and
 sends it over the bridge exactly as the portal does. `brandDark` is optional.
-`--brand '#…'` / `--brand-dark '#…'` override it for one run (quote the `#`). This repo
-doesn't ship the file; partner forks commit their own. Details: SDK `docs/runtime-rules.md`
-§Theme, locale and branding.
+`--brand '#…'` / `--brand-dark '#…'` override it for one run (quote the `#`). It's a local
+preview file: this repo doesn't ship one, so keep it out of PRs. Details: SDK
+`docs/runtime-rules.md` §Theme, locale and branding.
 
 ---
 
@@ -229,13 +229,12 @@ Slash commands (`.claude/skills/`) — invoke from the `fastedge-wizard-apps/` w
 
 ---
 
-## Partner repos
+## Forks
 
-The proxy can allow-list additional source repos, usually forks of this one. A fork serves
-**owned** templates from any ref (e.g. `preview/<branch>`). A **trusted partner** fork can also
-serve **shared** templates, but only from `main` / `gh-pages`. See `CONTRIBUTING.md`
-§Trusted partner repos for the setup. A partner on a rebranded portal previews its brand
-colour with a root `wizard-brand.json` (see Mock host §Brand preview).
+The proxy fetches only from allow-listed repos; a contributor's fork can be allow-listed for
+preview testing. A fork serves **owned** templates from any ref (e.g. `preview/<branch>`).
+Shared templates load only from this repo's `main` / `gh-pages`. See `CONTRIBUTING.md` §How
+your fork can serve wizards.
 
 ---
 
