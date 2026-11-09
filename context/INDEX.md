@@ -24,6 +24,7 @@ Everything a wizard author needs is in this repo's `context/` docs plus the publ
 | Guest SDK (`@gcoredev/fastedge-wizard-sdk`) | [`G-Core/fastedge-wizard-sdk`](https://github.com/G-Core/fastedge-wizard-sdk) (public) |
 | Proxy WASM app (fetches + re-serves wizards under one origin) | Gcore-internal |
 | SDK API / migration / consumption guide | `context/` in the public SDK repo |
+| Sandbox limits, managed-set scope, re-entry, rollback (+ architecture diagrams) | `docs/runtime-rules.md` in the public SDK repo |
 
 ---
 
@@ -96,7 +97,7 @@ types are included.
 
 | Tag / ref | Notes |
 |-----------|-------|
-| `v0.0.8` | Mock-host + theme/locale bridge shipped (see `decisions.md` §6). Note: the SDK `package.json` `version` field currently reads `0.0.1` and lags the tags — reconcile before the first external tag pin. |
+| npm `latest` | Current release — `npm view @gcoredev/fastedge-wizard-sdk version`. Each `vX.Y.Z` tag publishes to npm and CI rejects a tag that doesn't match the SDK's `package.json`, so tag, `package.json` and npm always agree. Release notes: the SDK repo's tags/commits. |
 | `main` | Development — do not pin committed wizards to this |
 
 > Wizards depend on the npm package (`"@gcoredev/fastedge-wizard-sdk": "latest"` for starters/examples; a production wizard can pin a published version). A `github:…#<tag>` pin also works.
@@ -216,10 +217,10 @@ Slash commands (`.claude/skills/`) — invoke from the `fastedge-wizard-apps/` w
 
 ## Partner repos
 
-The proxy can allow-list additional source repos (e.g. a partner's own wizard repo).
-Each is a repo of wizard subdirectories using the same `@gcoredev/fastedge-wizard-sdk`
-dep; the partner manages their own SDK pins, builds, and publish/serve strategy
-independently — their `WIZARD_SOURCE_CONFIG` ref/cdn need not match this repo's.
+The proxy can allow-list additional source repos, usually forks of this one. A fork serves
+**owned** templates from any ref (e.g. `preview/<branch>`). A **trusted partner** fork can also
+serve **shared** templates, but only from `main` / `gh-pages`. See `CONTRIBUTING.md`
+§Trusted partner repos for the setup.
 
 ---
 

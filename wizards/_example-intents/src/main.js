@@ -506,5 +506,5 @@ async function demo() {
     // ── Done ──────────────────────────────────────────────────────────────────
     section('Done — all intent patterns exercised');
     ok('See src/main.js for the documented intent reference.');
-    ok('See docs/wizards/intent-catalog.md for the full intent spec.');
+    ok('See the SDK types (WizardSession) and docs/runtime-rules.md for the full intent spec.');
 }

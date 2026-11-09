@@ -58,7 +58,40 @@ WIZARD_SOURCE_CONFIG={"repo":"<your-org>/FastEdge-Wizard-apps","ref":"preview/<b
 ```
 
 This only works for templates **you own**. Shared templates are always blocked from fork
-refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`.
+refs — they require a merged ref (`main` or `gh-pages`) from `G-Core/FastEdge-Wizard-apps`,
+or from a trusted partner repo (below).
+
+### Trusted partner repos
+
+By agreement with Gcore, a partner that shares templates with its own customers can serve
+those shared templates from its fork, without merging upstream. Gcore trusts the fork's
+`main` / `gh-pages` refs exactly like this repo's; `preview/*` refs stay owned-template-only.
+Because your customers then run whatever lands on those branches, the setup matters:
+
+1. **Fork** this repo into your org and keep the name you'll use in `WIZARD_SOURCE_CONFIG`.
+   Send Gcore the exact `<org>/<repo>`. The proxy matches it **case-sensitively**.
+2. **Enable GitHub Actions** in the fork (forks start with them off). `deploy.yml` then builds
+   on every merge to `main`, publishes to `gh-pages` and purges jsDelivr for your repo. It
+   needs no edits. The workflows run in **your** fork, on GitHub-hosted runners under your
+   account (free for public repos), using only the fork's automatic `GITHUB_TOKEN`. They are
+   your CI: keep `wizard-checks.yml`, but remove its `pull_request.paths` filter before
+   making its job checks required on `main`; otherwise documentation-only PRs will wait
+   indefinitely for required checks. Gcore can't enforce CI on your repo.
+3. **Protect `main` and `gh-pages`.** Require PR review on `main`, and allow only the deploy
+   workflow to push `gh-pages`.
+4. **Put your wizards under `wizards/<org>-<account-id>/`** so syncing from upstream never
+   conflicts with ours.
+5. **Sync upstream regularly** (GitHub's **Sync fork**, or `git fetch upstream && git merge
+   upstream/main`) to pick up template, CI and shared-package changes.
+
+Then point your shared templates at your fork:
+
+```
+WIZARD_SOURCE_CONFIG={"repo":"<your-org>/<your-repo>","ref":"gh-pages","wizardDir":"<your-org>-<account-id>/<wizard>","cdn":"jsdelivr"}
+```
+
+**Known limitation for rebranded portals:** a white-label portal's brand colours don't
+reach the wizard iframe yet, so wizards render in the default Gcore palette there.
 
 ---
 
@@ -288,6 +321,14 @@ const templates = await session.fastedge.templates.list();
 ```
 
 No `fetch()`, no `XMLHttpRequest`, no WebSocket.
+
+That's one of several sandbox limits. There's also no inline `<script>`/`<style>`, no
+`localStorage`, no `alert`, no popups, and `<form>` submission is blocked. Images, icons and
+fonts must ship inside your wizard (relative paths or inline `<svg>`); remote URLs and `data:`
+URIs are blocked. Read the SDK's
+[`docs/runtime-rules.md`](https://github.com/G-Core/fastedge-wizard-sdk/blob/main/docs/runtime-rules.md)
+before you build. It also explains the managed set (`out_of_scope`), re-entry from a deployed
+app, reserved `WIZARD_*` env keys and deployment rollback.
 
 The full capability surface — everything you can do through the bridge — is the SDK's `WizardSession` type. After `pnpm install`, the best entry point is `node_modules/@gcoredev/fastedge-wizard-sdk/docs/quickstart.md` — it covers `connect()`, intent patterns, error handling, and fixture setup. The `.d.ts` files (`dist/types.d.ts`, `dist/sdk.d.ts`) are the type-level source of truth. The summary in `context/INDEX.md` is a convenience reference.
 

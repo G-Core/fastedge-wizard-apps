@@ -13,8 +13,9 @@ It's the reference example for `deployment.plan`'s `cdnResourceFastedgeHandlers`
 resource-level FastEdge handler assignment (a PATCH on the CDN resource's own
 `options.fastedge`), which is distinct from `newCdnRules[].fastedgeFilter` (scoped to
 one path rule, headers-only). `cdnResourceFastedgeHandlers` is the only way to reach
-`on_response_body` / `on_request_body`. See `docs/wizards/intent-catalog.md` in the
-main `fastedge-frontend` repo for the full param/return shape.
+`on_response_body` / `on_request_body`. See `DeploymentPlanFastedgeHandlers` in the SDK's
+`src/types.ts` for the full shape, and the SDK's `docs/runtime-rules.md` §Deployments for its
+merge / `conflict` / rollback behaviour.
 
 ## ⚠️ Blocked on portal host deployment
 
@@ -80,5 +81,5 @@ pnpm run dev          # builds + starts the SDK mock host on localhost
   additional CDN resource would be a legitimate future use case, but nothing asked
   for it yet; add it if a real need shows up.
 - **Per-hook app overrides** — `cdnResourceFastedgeHandlers` supports binding a
-  different app per hook (see intent-catalog.md), but this template is one app on
+  different app per hook (see the SDK's `DeploymentPlanFastedgeHandlers` type), but this template is one app on
   all three hooks, so the wizard doesn't expose that generality in its UI.
