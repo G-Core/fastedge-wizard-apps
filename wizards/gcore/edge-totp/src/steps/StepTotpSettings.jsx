@@ -6,7 +6,7 @@ export function StepTotpSettings({ f, set }) {
         <>
             <h2 tabIndex={-1}>TOTP &amp; session settings</h2>
             <p className="totp-lede">
-                Both sections use Gcore defaults when left unselected. Open a section only
+                Both sections use the defaults when left unselected. Open a section only
                 to override.
             </p>
 
