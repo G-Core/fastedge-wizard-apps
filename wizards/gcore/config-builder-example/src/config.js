@@ -14,14 +14,15 @@ export const SCHEMA_VERSION = 1;
 export const ENV_KEY = 'ROUTER_CONFIG';
 
 /**
- * The host drops any wizard → host message over 64 KB (a safety limit on untrusted guests), and a
- * plan carries every app's env in one message — so the config must stay well under it. The reply
- * direction (deployment.current()) isn't capped. Warn early, block before the cap.
+ * The host caps a deployment.plan message at 1 MB (every app's env travels in it) and rejects a larger
+ * one with invalid_params. The config gets most of that; warn as it gets close, block before the cap.
  */
-export const BRIDGE_LIMIT_BYTES = 64 * 1024;
-/** The config's share of that, leaving room for the rest of the plan message. */
-export const MAX_CONFIG_BYTES = 60 * 1024;
-export const SIZE_WARN_BYTES = 48 * 1024;
+export const BRIDGE_LIMIT_BYTES = 1024 * 1024;
+/** The config's share of the plan message, leaving room for the rest of it. */
+export const MAX_CONFIG_BYTES = 960 * 1024;
+export const SIZE_WARN_BYTES = 768 * 1024;
+/** Above this a plain env read (std::env / WASI) fails — the app must use dictionary::get. */
+export const ENV_READ_LIMIT_BYTES = 64 * 1024;
 
 export const NODE_TYPES = {
     root: { label: 'All requests' },

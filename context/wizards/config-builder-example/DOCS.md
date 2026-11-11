@@ -66,11 +66,11 @@ field.env('main', 'ROUTER_CONFIG', { codec: field.json({ parse: upgrade, validat
 
 | Limit | Value | Effect |
 |---|---|---|
-| Wizard → host message (the host's `MAX_MESSAGE_BYTES`) | **64 KB per message** | the whole plan (every app's env) must fit. An oversized message is silently dropped, and the wizard's call times out after 60 s. The wizard warns at 48 KB of config and blocks above 60 KB. Replies from the host (`deployment.current()`) are not capped |
-| Runtime env read (`std::env::var` / `getEnv`) | 64 KB per variable | never reached through the wizard, because the bridge cap is lower |
+| Wizard → host message, `deployment.plan` (the host's `MAX_CONFIG_MESSAGE_BYTES`) | **1 MB per message** | the whole plan (every app's env) must fit. Over it the host replies `invalid_params` at once. The wizard warns at 768 KB of config and blocks above 960 KB. Replies from the host (`deployment.current()`) are not capped |
+| Runtime env read (`std::env::var` / `getEnv`) | 64 KB per variable | the wizard shows a note above 64 KB: the app must use the dictionary API |
 | Dictionary API (`fastedge::dictionary::get`, `getDictionary`) | no per-variable limit | how the app should read a large config |
 
-Raising the bridge cap is a portal + SDK protocol change.
+The platform API's own maximum for an env value is not documented. Check it on preprod before relying on values near 1 MB.
 
 ## Notes for wizards built on this
 
@@ -78,7 +78,7 @@ Raising the bridge cap is a portal + SDK protocol change.
 - **Read the config with the dictionary API** in the app (`dictionary::get`), not `std::env`, so a config that grows past 64 KB still loads.
 - **Version the format from day one** (`schemaVersion`) and keep the upgrade path in `parse`. A deployed config outlives the wizard version that wrote it.
 - **Validate in the wizard and in the app.** The wizard blocks bad trees, but the app must still fail safe on a value edited by hand.
-- **Keep it under the bridge cap.** The 64 KB budget is for the whole plan message, not just your env value.
+- **Keep it under the bridge cap.** The 1 MB budget is for the whole plan message, not just your env value.
 
 ## Build, dev, test
 

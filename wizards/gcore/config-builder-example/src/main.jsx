@@ -9,6 +9,7 @@ import { DeployProgress, WizardShell, WizardStep } from '@gcore/wizard-step-kit/
 
 import {
     ENV_KEY,
+    ENV_READ_LIMIT_BYTES,
     MAX_CONFIG_BYTES,
     SIZE_WARN_BYTES,
     configBytes,
@@ -76,12 +77,14 @@ function SizeMeter({ bytes }) {
             </label>
             {bytes > MAX_CONFIG_BYTES ? (
                 <Note kind="danger">The config is too large to deploy through the portal: a deployment
-                    message is limited to 64 KB in total. Remove or merge branches.</Note>
+                    message is limited to 1 MB in total. Remove or merge branches.</Note>
             ) : bytes > SIZE_WARN_BYTES ? (
-                <Note kind="warn">The config is close to the 64 KB a deployment message can carry. The
-                    app should read it with the dictionary API (<code>dictionary::get</code>), which has no
-                    per-variable size limit — plain environment reads stop at 64 KB.</Note>
+                <Note kind="warn">The config is close to the 1 MB a deployment message can carry.</Note>
             ) : null}
+            {bytes > ENV_READ_LIMIT_BYTES && bytes <= MAX_CONFIG_BYTES && (
+                <Note>Over 64 KB: the app must read this value with the dictionary API
+                    (<code>dictionary::get</code>) — a plain environment read stops at 64 KB.</Note>
+            )}
         </>
     );
 }
