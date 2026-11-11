@@ -79,8 +79,8 @@ show rules as a list and open one rule's form at a time, never forms nested in f
   connectors show nesting. Each level ends with **+ Add rule…** (a sibling at that level) and a dashed **Otherwise →** card
   (that level's fallback; selecting it edits the parent). Rules with errors say "needs fixing".
 - **Order decides the winner.** Rules at one level are checked 1, 2, 3… and the first match wins, so a more specific rule
-  must come before a broader one. **↑ Move up / ↓ Move down** in the editor reorder siblings (`moveRule` in `config.js`).
-- **Rule editor** (right): the selected rule only — its position ("Rule 2 of 3 under All requests"), move/remove, then
+  must come before a broader one. Each rule's card has ⬆️ ⬇️ (reorder among its siblings, `moveRule` in `config.js`) and ❌ (remove it and everything inside it).
+- **Rule editor** (right): the selected rule only — its position ("Rule 2 of 3 under All requests"), then
   **When** (its condition), **Then** (its action), and **+ Add a rule inside this one** to nest. The panes stack below 56rem.
 - **Page width:** the wizard sets `:root { --gc-wizard-max-width: 1280px; }` (the portal base caps pages at 900px by default).
 - **Review** shows the same outline read-only, with the JSON in a collapsed `<details>`.

@@ -36,6 +36,18 @@ function Input({ label, value, onChange, ...rest }) {
     );
 }
 
+// Emoji, with U+FE0F so every platform draws them as emoji rather than as a thin text glyph.
+const ICONS = { up: '⬆\ufe0f', down: '⬇\ufe0f', remove: '❌\ufe0f' };
+
+/** A quiet icon-only button. `label` is what a screen reader announces (and the tooltip). */
+function IconButton({ icon, label, small, ...rest }) {
+    return (
+        <button type="button" className={`cb-icon${small ? ' cb-icon--small' : ''}`} aria-label={label} title={label} {...rest}>
+            {ICONS[icon]}
+        </button>
+    );
+}
+
 function Select({ label, value, onChange, options }) {
     return (
         <label className="cb-field">
@@ -65,8 +77,8 @@ function CountryPicker({ selected, onChange }) {
                 {selected.map((code) => (
                     <span key={code} className="cb-chip">
                         {COUNTRY_NAME.get(code) ?? code} ({code})
-                        <button type="button" aria-label={`Remove ${code}`}
-                            onClick={() => onChange(selected.filter((c) => c !== code))}>×</button>
+                        <IconButton icon="remove" small label={`Remove ${code}`}
+                            onClick={() => onChange(selected.filter((c) => c !== code))} />
                     </span>
                 ))}
             </div>
@@ -118,7 +130,8 @@ function Headers({ headers = [], onChange }) {
                 <div key={i} className="cb-row">
                     <Input label="Response header" value={h.name} onChange={(name) => set(i, { name })} />
                     <Input label="Value" value={h.value} onChange={(value) => set(i, { value })} />
-                    <button type="button" onClick={() => onChange(headers.filter((_, j) => j !== i))}>Remove</button>
+                    <IconButton icon="remove" label={`Remove header ${h.name || i + 1}`}
+                        onClick={() => onChange(headers.filter((_, j) => j !== i))} />
                 </div>
             ))}
             <button type="button" onClick={() => onChange([...headers, { name: '', value: '' }])}>Add a response header</button>
@@ -174,23 +187,46 @@ function AddRule({ node, path, apply, label = '+ Add rule' }) {
     );
 }
 
-function Card({ onSelect, current, className = '', children }) {
-    const cls = `cb-rule ${className}`;
-    return onSelect ? (
-        <button type="button" className={cls} aria-current={current || undefined} onClick={onSelect}>{children}</button>
-    ) : (
-        <div className={cls}>{children}</div>
+// A card is a select button plus, beside it, its own action buttons (a button can't contain buttons).
+function Card({ onSelect, current, className = '', tools, children }) {
+    return (
+        <div className={`cb-rule ${current ? 'cb-rule--current' : ''} ${className}`}>
+            {onSelect ? (
+                <button type="button" className="cb-rule__body" aria-current={current || undefined} onClick={onSelect}>{children}</button>
+            ) : (
+                <div className="cb-rule__body">{children}</div>
+            )}
+            {tools && <span className="cb-rule__tools">{tools}</span>}
+        </div>
     );
 }
 
-function Branch({ node, path, index, errors, selected, onSelect, apply }) {
+/** ↑ ↓ × on a rule's card: reorder among its siblings, or remove it (and everything inside it). */
+function RuleTools({ path, index, count, label, apply }) {
+    return (
+        <>
+            <IconButton icon="up" label={`Move ${label} up`} disabled={index === 0}
+                onClick={() => apply((c) => moveRule(c, path, -1))} />
+            <IconButton icon="down" label={`Move ${label} down`} disabled={index === count - 1}
+                onClick={() => apply((c) => moveRule(c, path, 1))} />
+            <IconButton icon="remove" label={`Remove ${label}`}
+                onClick={() => apply((c) => ({ config: removeRule(c, path), path: parentPath(path) }))} />
+        </>
+    );
+}
+
+function Branch({ node, path, index, count, errors, selected, onSelect, apply }) {
     const isRoot = path === '';
     const hasChildren = node.children.length > 0;
     const select = onSelect && (() => onSelect(path));
 
     return (
         <li>
-            <Card onSelect={select} current={selected === path} className={isRoot ? 'cb-rule--root' : ''}>
+            <Card onSelect={select} current={selected === path} className={isRoot ? 'cb-rule--root' : ''}
+                tools={!isRoot && apply && (
+                    <RuleTools path={path} index={index} count={count} apply={apply}
+                        label={`rule ${index + 1} (${NODE_TYPES[node.type].label} ${conditionLabel(node)})`} />
+                )}>
                 {index !== undefined && <span className="cb-rule__num">{index + 1}</span>}
                 <span className="cb-badge">{isRoot ? 'Start' : NODE_TYPES[node.type].label}</span>
                 <span className="cb-rule__match">{conditionLabel(node)}</span>
@@ -201,7 +237,7 @@ function Branch({ node, path, index, errors, selected, onSelect, apply }) {
                 <ul>
                     {node.children.map((child, i) => (
                         <Branch key={childPath(path, i)} node={child} path={childPath(path, i)} index={i}
-                            errors={errors} selected={selected} onSelect={onSelect} apply={apply} />
+                            count={node.children.length} errors={errors} selected={selected} onSelect={onSelect} apply={apply} />
                     ))}
                     {apply && ALLOWED_CHILDREN[node.type].length > 0 && (
                         <li><AddRule node={node} path={path} apply={apply} /></li>
@@ -247,18 +283,8 @@ export function RuleEditor({ config, path, errors, onEdit, apply }) {
             <p className="cb-lede">
                 {isRoot
                     ? 'Every request starts here. The rules under it are checked top to bottom; the first that matches wins.'
-                    : 'Rules at the same level are checked top to bottom; the first that matches wins. Move this rule to change the order.'}
+                    : 'Rules at the same level are checked top to bottom; the first that matches wins. Use ⬆️ ⬇️ on the card to reorder, ❌️ to remove.'}
             </p>
-            {!isRoot && (
-                <div className="cb-editor__order">
-                    <button type="button" disabled={index === 0} onClick={() => apply((c) => moveRule(c, path, -1))}>↑ Move up</button>
-                    <button type="button" disabled={index === parent.children.length - 1}
-                        onClick={() => apply((c) => moveRule(c, path, 1))}>↓ Move down</button>
-                    <button type="button" onClick={() => apply((c) => ({ config: removeRule(c, path), path: parentPath(path) }))}>
-                        Remove
-                    </button>
-                </div>
-            )}
             {own.length > 0 && (
                 <ul className="cb-errors">
                     {own.map((e) => <li key={e}>{e}</li>)}
