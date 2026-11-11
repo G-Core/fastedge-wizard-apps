@@ -218,6 +218,9 @@ class GcWizardShell extends HTMLElement {
 
         // Last step + next → finish
         if (reason === 'next' && this.#current === steps.length - 1) {
+            // Finish starts the deploy: follow its progress even if the user never scrolled to the
+            // bottom (a step barely taller than the frame shows the button without scrolling).
+            this.#stuckToBottom = true;
             this.dispatchEvent(new CustomEvent('finish', { bubbles: true }));
             return;
         }
