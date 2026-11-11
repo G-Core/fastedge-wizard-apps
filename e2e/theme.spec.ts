@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // HARD RULE: every deployed wizard must have passing snapshot + a11y coverage.
@@ -80,6 +80,21 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
             2: { id: 2, api_type: 'proxy-wasm', name: 'SSO - CDN Filter', params: [] },
         },
     },
+    // config-builder-example: one wasi-http app launched from its template; starts from an empty tree.
+    'gcore/config-builder-example': {
+        context: {
+            launchTemplateId: 1,
+            companionTemplateIds: [],
+            theme: 'light',
+            locale: 'en',
+            feAppId: null,
+            managedAppIds: [],
+            featureFlags: {},
+        },
+        templatesById: {
+            1: { id: 1, api_type: 'wasi-http', name: 'Request router (echo)', params: [] },
+        },
+    },
     // html2md is single-app/zero-param — it only needs launchTemplateId to be non-null
     // to render past the "must be launched from..." bail state.
     'gcore/html2md': {
@@ -101,6 +116,21 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
 // Re-entry: the wizard reopened on its deployed app (launchTemplateId null) loads its form from
 // deployment.current(). One extra snapshot + a11y pass per wizard listed here.
 const REENTRY: Record<string, BridgeOverrides> = {
+    // The wizard's own re-entry fixture (also what its mock host loads with ?mode=reentry).
+    'gcore/config-builder-example': {
+        context: {
+            launchTemplateId: null,
+            companionTemplateIds: [],
+            theme: 'light',
+            locale: 'en',
+            feAppId: 101,
+            managedAppIds: [101],
+            featureFlags: {},
+        },
+        current: JSON.parse(
+            readFileSync(join(wizardsDir, 'gcore/config-builder-example/fixtures/deployment/current.json'), 'utf8'),
+        ),
+    },
     'gcore/edge-totp': {
         context: {
             launchTemplateId: null,

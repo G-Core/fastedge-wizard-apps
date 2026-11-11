@@ -1,0 +1,18 @@
+{
+    "revision": "fixture-1",
+    "fastedgeApps": [
+        {
+            "ref": "main",
+            "name": "router",
+            "api_type": "wasi-http",
+            "source": {
+                "fromTemplateId": 1
+            },
+            "env": {
+                "ROUTER_CONFIG": "{\"schemaVersion\":1,\"root\":{\"type\":\"root\",\"action\":{\"kind\":\"origin\",\"host\":\"www.example.com\"},\"children\":[{\"type\":\"country\",\"countries\":[\"FR\",\"BE\",\"LU\"],\"children\":[{\"type\":\"path\",\"prefix\":\"/shop\",\"children\":[],\"action\":{\"kind\":\"origin\",\"host\":\"shop-eu.example.com\",\"headers\":[{\"name\":\"X-Region\",\"value\":\"eu\"}]}}],\"action\":{\"kind\":\"redirect\",\"status\":302,\"url\":\"https://fr.example.com/\"}},{\"type\":\"path\",\"prefix\":\"/old-blog\",\"children\":[],\"action\":{\"kind\":\"rewrite\",\"path\":\"/blog\"}},{\"type\":\"device\",\"device\":\"bot\",\"children\":[],\"action\":{\"kind\":\"respond\",\"status\":403,\"body\":\"Automated traffic is not allowed.\"}}]}}"
+            }
+        }
+    ],
+    "secrets": [],
+    "stores": []
+}

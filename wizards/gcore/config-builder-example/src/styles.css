@@ -1,0 +1,133 @@
+/* Pull in step-kit component styles (bundled by esbuild — no runtime fetch). */
+@import url("@gcore/wizard-step-kit/styles");
+
+/* Base element styles come from /styles/v1/wizard.css (injected). Colours must use var(--gc-*) tokens. */
+
+.cb-lede {
+    color: var(--gc-wizard-text-muted);
+    max-width: 65ch;
+}
+
+.cb-field {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.cb-field > span {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.cb-field input,
+.cb-field select,
+.cb-field textarea {
+    width: 100%;
+}
+
+.cb-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.cb-row > .cb-field {
+    flex: 1 1 12rem;
+}
+
+.cb-note {
+    border: 1px solid var(--gc-wizard-border);
+    border-left-width: 4px;
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    background: var(--gc-wizard-surface);
+    font-size: 0.875rem;
+}
+
+.cb-note--info { border-left-color: var(--gc-wizard-info); }
+
+.cb-note--warn { border-left-color: var(--gc-wizard-warning); }
+
+.cb-note--danger { border-left-color: var(--gc-wizard-danger); }
+
+/* One node of the tree; children indent under their parent. */
+.cb-node {
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+}
+
+.cb-node--error { border-color: var(--gc-wizard-danger); }
+
+.cb-node__head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.cb-node__title { font-weight: 600; }
+
+.cb-children {
+    margin-left: 1.25rem;
+    padding-left: 0.75rem;
+    border-left: 2px solid var(--gc-wizard-border);
+}
+
+.cb-action {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px dashed var(--gc-wizard-border);
+}
+
+.cb-errors {
+    color: var(--gc-wizard-danger);
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.cb-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.25rem 0;
+}
+
+.cb-chip {
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0 0.25rem 0 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.cb-chip button {
+    margin-left: 0.25rem;
+    padding: 0 0.25rem;
+}
+
+.cb-matches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.cb-preview {
+    max-height: 20rem;
+    overflow: auto;
+    font-size: 0.8125rem;
+    background: var(--gc-wizard-surface);
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem;
+}
+
+.cb-raw {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.cb-meter { width: 100%; }

@@ -1,0 +1,19 @@
+[
+    {
+        "id": 1,
+        "name": "Request router (echo)",
+        "short_descr": "Config builder example: a request-routing tree saved as one JSON env value.",
+        "long_descr": "Reference app for the config-builder wizard. It returns its ROUTER_CONFIG as JSON so the deployed config is easy to inspect; a real router would read the same value with the dictionary API.",
+        "api_type": "wasi-http",
+        "binary_id": 1,
+        "params": [
+            {
+                "name": "ROUTER_CONFIG",
+                "data_type": "string",
+                "mandatory": true,
+                "descr": "The routing tree as JSON (schemaVersion 1). Written by the config-builder wizard.",
+                "metadata": "{}"
+            }
+        ]
+    }
+]
