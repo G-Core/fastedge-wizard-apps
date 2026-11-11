@@ -100,8 +100,8 @@ show rules as a list and open one rule's form at a time, never forms nested in f
 | Wizard → host message, `deployment.plan` (the host's `MAX_CONFIG_MESSAGE_BYTES`) | **1 MB per message** | the whole plan (every app's env) must fit. Over it the host replies `invalid_params` at once. The wizard warns at 768 KB of config and blocks above 960 KB. Replies from the host (`deployment.current()`) are not capped |
 | Runtime env read (`std::env::var` / `getEnv`) | 64 KB per variable | the wizard shows a note above 64 KB: the app must use the dictionary API |
 | Dictionary API (`fastedge::dictionary::get`, `getDictionary`) | no per-variable limit | how the app should read a large config |
+| Platform API (stored env value) | at least 4 MB (measured on preprod) | not the binding limit: the 1 MB message cap is |
 
-The platform API's own maximum for an env value is not documented. Check it on preprod before relying on values near 1 MB.
 
 ## Notes for wizards built on this
 
