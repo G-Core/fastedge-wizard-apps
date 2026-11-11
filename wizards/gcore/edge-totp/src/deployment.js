@@ -175,20 +175,29 @@ export const TOTP_DEFAULTS = { issuer: 'TOTP', digits: '6', period: '30', algo: 
 export const POLICY_DEFAULTS = { sessionTtl: '28800', maxAttempts: '5', ticketTtl: '90', kvPrefix: 'totp:', selfEnroll: 'true' };
 export const BRAND_DEFAULTS = { name: '', logo: '', favicon: '', color: DEFAULT_BRAND_COLOR, hover: '' };
 
+// Why each fixed field can't change on Re-entry — shown next to the locked input (fields.locks()).
+const FIXED = {
+    authPrefix: 'Fixed after the first deploy — the CDN route and both apps use it.',
+    store: "Fixed after the first deploy — enrolled users' seeds live here.",
+    sessionKey: 'Fixed after the first deploy — changing it would sign every visitor out.',
+    variant: 'Fixed after the first deploy.',
+    proofKey: 'Reused as deployed — your origin already trusts its public key.',
+};
+
 export const fields = defineFieldMap({
-    authPrefix,
+    authPrefix: field.fixed(FIXED.authPrefix, authPrefix),
     audience: field.env(BOTH, 'MFA_AUDIENCE'),
     cookie: field.env(BOTH, 'MFA_SESSION_COOKIE', { default: 'mfa_session' }),
     issuer: field.env(BOTH, 'MFA_ISSUER', { default: '', omitIfDefault: true }),
     loginUrl: field.env('filter', 'MFA_LOGIN_URL', { default: '', omitIfDefault: true }),
     protection,
-    store,
-    sessionKey: field.secret(BOTH, 'MFA_SESSION_KEY'),
+    store: field.fixed(FIXED.store, store),
+    sessionKey: field.fixed(FIXED.sessionKey, field.secret(BOTH, 'MFA_SESSION_KEY')),
     handoff: field.secret('app', 'HANDOFF_KEY'),
     enroll: field.secret('app', 'ENROLL_API_KEY'),
     gcore: field.secret('app', 'GCORE_API_TOKEN'),
-    variant,
-    proofKey: field.keypair('app', 'MFA_PROOF_SIGNING_KEY', 'MFA_PROOF_PUBLIC_JWK'),
+    variant: field.fixed(FIXED.variant, variant),
+    proofKey: field.fixed(FIXED.proofKey, field.keypair('app', 'MFA_PROOF_SIGNING_KEY', 'MFA_PROOF_PUBLIC_JWK')),
     proofTtl: field.env('app', 'PROOF_TTL', { default: '90', omitIfDefault: true }),
     proofCookie: field.env('app', 'MFA_PROOF_COOKIE', { default: 'mfa_proof', omitIfDefault: true }),
     totp: envGroup(
@@ -217,6 +226,19 @@ export const fields = defineFieldMap({
         { omitDefaults: true },
     ),
 });
+
+/**
+ * What the form must lock in Re-entry, with the reason to show: the field map's fixed fields, plus
+ * what the host itself refuses to change (app names, the CDN resource). `{}` in template mode.
+ */
+export function lockedFields(current) {
+    if (!current) return {};
+    return {
+        name: 'Fixed after the first deploy — it names both apps.',
+        cdn: 'Fixed after the first deploy — both apps are attached to it.',
+        ...fields.locks(current),
+    };
+}
 
 /** Template mode: the two apps, the app origin, and no rules yet — the field map fills the rest. */
 export function skeleton({ name, filterT, appT, cdnResourceId }) {

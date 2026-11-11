@@ -80,6 +80,8 @@ Keys the map doesn't own (hand edits in the dashboard) pass through unchanged. E
 
 Opened on a deployed app (`launchTemplateId: null`), the wizard loads its form from `session.deployment.current()`.
 - **Fixed after the first deploy:** the deployment name, CDN resource, variant, auth prefix, seed store and session signing key. Variant B reuses its keypair (no Generate / Clear).
+  - The map marks its fixed fields with `field.fixed(reason, …)`; `lockedFields(current)` (`deployment.js`) adds the host-fixed name and CDN resource and returns `{ field: reason }`, which the steps pass to the kit (`ResourceRow locked`, `<Locked>` around a disabled `Field`). `fields.save` refuses to change a fixed field on the live deployment.
+  - A fixed field whose deployed value couldn't be read (e.g. the store binding was removed by hand) is not locked, so the user can repair it.
 - **Fields that can't be read** (a value edited outside the wizard; the two store bindings disagree; a filter rule pattern the wizard didn't write) are listed on the Overview step. They show defaults, and deploying leaves the deployed value alone unless the user changes the field.
 
 ## Variants

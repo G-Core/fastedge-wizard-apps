@@ -15,7 +15,7 @@ All of it is in **`src/deployment.js`**. The wizard edits two values, and each l
 
 | Deployment (what the host stores) | Wizard form |
 |---|---|
-| `fastedgeApps[ref 'main'].name` | `name` (locked in Re-entry) |
+| `fastedgeApps[ref 'main'].name` | `name` (locked in Re-entry: `lockedFields(current)` → `<Locked>`) |
 | `fastedgeApps[ref 'main'].env.ROUTER_CONFIG` | `config` (JSON string ↔ the routing tree) |
 
 The UI (`main.jsx`) makes two calls:

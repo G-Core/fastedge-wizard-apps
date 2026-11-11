@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 
-export function StepSecrets({ session, f, set, reentry = false }) {
+export function StepSecrets({ session, f, set, locks = {} }) {
     const generatedElsewhere = f.variant === 'B'
         ? ` Variant B also uses a fifth — the ES256 proof key — which you already generated back in the Variant step; it is not listed here.`
         : '';
@@ -45,10 +45,8 @@ export function StepSecrets({ session, f, set, reentry = false }) {
                 (<strong>Platform API token</strong>). Generate each below — the session key is
                 <strong> shared</strong>, created once and bound to both apps.{generatedElsewhere}
             </p>
-            {reentry && f.sessionKey ? (
-                <ResourceRow title="Session signing key (shared)"
-                    sub="Fixed after the first deploy — changing it would sign every visitor out."
-                    set={!!f.sessionKey} value={f.sessionKey?.name} />
+            {locks.sessionKey ? (
+                <ResourceRow title="Session signing key (shared)" value={f.sessionKey?.name} set locked={locks.sessionKey} />
             ) : (
                 <ResourceRow title="Session signing key (shared)"
                     sub="HS256, edge-internal. App signs mfa_session; filter verifies it." set={!!f.sessionKey}

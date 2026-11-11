@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { connect, WizardError } from '@gcoredev/fastedge-wizard-sdk';
 import '@gcore/wizard-step-kit'; // side-effect: registers the custom elements
-import { DeployProgress, WizardShell, WizardStep } from '@gcore/wizard-step-kit/react';
+import { DeployProgress, Locked, WizardShell, WizardStep } from '@gcore/wizard-step-kit/react';
 
 import {
     ENV_READ_LIMIT_BYTES,
@@ -19,7 +19,7 @@ import {
     updateNode,
     validate,
 } from './config.js';
-import { ENV_KEY, loadForm, toDeployPlan } from './deployment.js';
+import { ENV_KEY, loadForm, lockedFields, toDeployPlan } from './deployment.js';
 import { Outline, RuleEditor } from './tree.jsx';
 
 const hostOrigin = new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
@@ -32,7 +32,7 @@ function Note({ kind = 'info', children }) {
 
 // ── Steps ────────────────────────────────────────────────────────────────────
 
-function StepOverview({ name, setName, reentry, loadError, onReset }) {
+function StepOverview({ name, setName, reentry, locks, loadError, onReset }) {
     return (
         <>
             <h2 tabIndex={-1}>{reentry ? 'Edit request routing' : 'Edge request router'}</h2>
@@ -60,10 +60,12 @@ function StepOverview({ name, setName, reentry, loadError, onReset }) {
                     <button type="button" onClick={onReset}>Start from an empty config</button>
                 </Note>
             )}
-            <label className="cb-field">
-                <span>App name</span>
-                <input type="text" value={name} disabled={reentry} onChange={(e) => setName(e.target.value)} />
-            </label>
+            <Locked reason={locks.name}>
+                <label className="cb-field">
+                    <span>App name</span>
+                    <input type="text" value={name} disabled={!!locks.name} onChange={(e) => setName(e.target.value)} />
+                </label>
+            </Locked>
         </>
     );
 }
@@ -144,6 +146,7 @@ function StepReview({ name, config, deploy }) {
 function Wizard({ session, template, current }) {
     const reentry = current !== null;
     const [initial] = useState(() => loadForm(current)); // deployment.js: live deployment → form
+    const locks = useMemo(() => lockedFields(current), [current]);
     const [name, setName] = useState(initial.name);
     const [config, setConfig] = useState(initial.config);
     const [loadError, setLoadError] = useState(initial.error);
@@ -192,7 +195,7 @@ function Wizard({ session, template, current }) {
             onWizardFinished={() => session.wizard.finish()}
         >
             <WizardStep title="Overview">
-                <StepOverview name={name} setName={setName} reentry={reentry} loadError={loadError}
+                <StepOverview name={name} setName={setName} reentry={reentry} locks={locks} loadError={loadError}
                     onReset={() => {
                         setConfig(emptyConfig());
                         setLoadError(null);

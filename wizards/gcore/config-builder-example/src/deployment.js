@@ -14,6 +14,7 @@
 //
 // main.jsx calls only the two functions at the bottom:
 //   loadForm(current)             start the form: an empty tree (template mode) or the live one (Re-entry)
+//   lockedFields(current)         what the form must lock in Re-entry, with the reason to show
 //   toDeployPlan(form, context)   turn the form into deployment.deploy() params
 //
 // Everything about the tree itself (format, validation, editing) is in config.js.
@@ -73,6 +74,16 @@ export function loadForm(current) {
         config: values.config ?? emptyConfig(),
         error: errors.config ?? null,
     };
+}
+
+/**
+ * What the form must lock in Re-entry, with the reason to show (`{}` in template mode). The host
+ * refuses to rename a deployed app; `fields.locks()` adds any field marked `field.fixed` (none here —
+ * the whole config stays editable).
+ */
+export function lockedFields(current) {
+    if (!current) return {};
+    return { name: 'Fixed after the first deploy — the portal keeps the app name.', ...fields.locks(current) };
 }
 
 /**

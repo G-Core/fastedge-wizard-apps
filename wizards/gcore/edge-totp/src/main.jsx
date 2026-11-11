@@ -21,6 +21,7 @@ import {
     fields,
     fromForm,
     loadForm,
+    lockedFields,
     parseProtectedPaths,
     reentryValues,
     skeleton,
@@ -92,6 +93,7 @@ function reentryForm(current) {
 function Wizard({ session, filterT, appT, current }) {
     const reentry = current !== null;
     const loaded = useMemo(() => (reentry ? reentryForm(current) : null), [current, reentry]);
+    const locks = useMemo(() => lockedFields(current), [current]); // { field: reason } — Re-entry only
     const [step, setStep] = useState(0);
     const [f, setF] = useState(() => loaded?.form ?? DEFAULT_FORM);
     const set = (patch) => setF((prev) => ({ ...prev, ...patch }));
@@ -180,6 +182,7 @@ function Wizard({ session, filterT, appT, current }) {
                     filterT={filterT}
                     appT={appT}
                     reentry={reentry}
+                    locks={locks}
                     loadErrors={loaded?.errors}
                 />
             </WizardStep>
@@ -189,6 +192,7 @@ function Wizard({ session, filterT, appT, current }) {
                     f={f}
                     set={set}
                     reentry={reentry}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="CDN resource">
@@ -197,6 +201,7 @@ function Wizard({ session, filterT, appT, current }) {
                     f={f}
                     set={set}
                     reentry={reentry}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="Routing & tokens">
@@ -204,6 +209,7 @@ function Wizard({ session, filterT, appT, current }) {
                     f={f}
                     set={set}
                     reentry={reentry}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="Edge Storage">
@@ -212,6 +218,7 @@ function Wizard({ session, filterT, appT, current }) {
                     f={f}
                     set={set}
                     reentry={reentry}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="Secrets">
@@ -220,6 +227,7 @@ function Wizard({ session, filterT, appT, current }) {
                     f={f}
                     set={set}
                     reentry={reentry}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="TOTP settings">

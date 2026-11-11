@@ -3,7 +3,7 @@ import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 import { Note } from '../components.jsx';
 
-export function StepStore({ session, f, set, reentry = false }) {
+export function StepStore({ session, f, set, locks = {} }) {
     const [busy, setBusy] = useState(false);
     // One call: the user selects an existing store or creates one inline in the same host modal.
     async function selectStore() {
@@ -35,11 +35,8 @@ export function StepStore({ session, f, set, reentry = false }) {
                 user&apos;s seed and hijack their second factor — keep it scoped to this store
                 alone.
             </Note>
-            {reentry && f.store ? ( // locked once deployed; pickable only if it couldn't be read
-                <ResourceRow title="Edge Storage"
-                    sub="Fixed after the first deploy — enrolled users' seeds live here."
-                    value={f.store ? `${f.store.name} (#${f.store.id})` : undefined}
-                    set={!!f.store} />
+            {locks.store ? ( // locked once deployed; pickable only if it couldn't be read (no lock)
+                <ResourceRow title="Edge Storage" value={`${f.store.name} (#${f.store.id})`} set locked={locks.store} />
             ) : (
                 <ResourceRow title="Edge Storage"
                     sub="Create a new instance or pick an existing one."

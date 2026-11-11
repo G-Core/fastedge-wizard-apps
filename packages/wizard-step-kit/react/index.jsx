@@ -136,7 +136,11 @@ export function WizardPanel({ value, label, children }) {
  *           labels?: { set?: string, unset?: string, clear?: string },
  *           children?: React.ReactNode }} props
  */
-export function ResourceRow({ title, sub, value, set = false, onClear, labels = {}, children }) {
+/**
+ * `locked`: a reason string (e.g. from the SDK field map's `locks()`) locks the row — neutral
+ * "🔒 locked" badge, no clear, actions hidden, the reason in place of `sub`. Falsy → not locked.
+ */
+export function ResourceRow({ title, sub, value, set = false, locked, onClear, labels = {}, children }) {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -160,7 +164,9 @@ export function ResourceRow({ title, sub, value, set = false, onClear, labels = 
         if (!el) return;
         el.toggleAttribute('set', set);
         el.toggleAttribute('clearable', !!onClear);
-    }, [set, onClear]);
+        el.toggleAttribute('locked', !!locked);
+        if (typeof locked === 'string') el.setAttribute('reason', locked); else el.removeAttribute('reason');
+    }, [set, onClear, locked]);
 
     useEffect(() => {
         const el = ref.current;
@@ -172,6 +178,15 @@ export function ResourceRow({ title, sub, value, set = false, onClear, labels = 
     }, [labels]);
 
     return h('gc-resource-row', { ref }, children);
+}
+
+/**
+ * Locks the fields inside it and shows "🔒 <reason>" under them. Falsy `reason` → renders the
+ * children unchanged, so wrap unconditionally: `<Locked reason={locks.authPrefix}>…</Locked>`.
+ * It doesn't disable the fields — pass `disabled={!!reason}` to them yourself.
+ */
+export function Locked({ reason, children }) {
+    return h('gc-locked', reason ? { reason } : {}, children);
 }
 
 /**

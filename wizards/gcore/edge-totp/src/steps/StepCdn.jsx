@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 
-export function StepCdn({ session, f, set, reentry = false }) {
+export function StepCdn({ session, f, set, locks = {} }) {
     const [busy, setBusy] = useState(false);
     async function pick() {
         setBusy(true);
@@ -27,11 +27,8 @@ export function StepCdn({ session, f, set, reentry = false }) {
                 Pick the CDN delivery domain that fronts the site you are protecting. Both apps
                 are wired onto this one resource.
             </p>
-            {reentry ? (
-                <ResourceRow title="CDN resource"
-                    sub="Fixed after the first deploy."
-                    value={`#${f.cdn.id}`}
-                    set />
+            {locks.cdn ? (
+                <ResourceRow title="CDN resource" value={`#${f.cdn.id}`} set locked={locks.cdn} />
             ) : (
             <ResourceRow title="CDN resource"
                 sub="The filter and origin both attach here."

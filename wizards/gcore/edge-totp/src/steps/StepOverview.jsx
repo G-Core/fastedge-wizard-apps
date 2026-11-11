@@ -1,6 +1,7 @@
+import { Locked } from '@gcore/wizard-step-kit/react';
 import { Note, Field } from '../components.jsx';
 
-export function StepOverview({ f, set, filterT, appT, reentry = false, loadErrors = {} }) {
+export function StepOverview({ f, set, filterT, appT, reentry = false, locks = {}, loadErrors = {} }) {
     const problems = Object.entries(loadErrors);
     return (
         <>
@@ -48,9 +49,11 @@ export function StepOverview({ f, set, filterT, appT, reentry = false, loadError
                 blank, and every visitor is blocked, not let through. This wizard keeps the
                 shared values in sync for you.
             </Note>
-            <Field label="Deployment name" value={f.name} onChange={(v) => set({ name: v })}
-                hint="Used to name the two apps, the origin, and the CDN rules (e.g. totp-app, totp-filter)."
-                disabled={reentry} />
+            <Locked reason={locks.name}>
+                <Field label="Deployment name" value={f.name} onChange={(v) => set({ name: v })}
+                    hint={locks.name ? undefined : 'Used to name the two apps, the origin, and the CDN rules (e.g. totp-app, totp-filter).'}
+                    disabled={!!locks.name} />
+            </Locked>
         </>
     );
 }

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { OptionalPanels, WizardPanel } from '@gcore/wizard-step-kit/react';
 import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
-import { Field, Note } from '../components.jsx';
+import { Field } from '../components.jsx';
 
 function ProofFields({ f, set }) {
     return (
@@ -120,7 +120,7 @@ function VariantBDiagram() {
     );
 }
 
-export function StepVariant({ session, f, set, reentry = false }) {
+export function StepVariant({ session, f, set, reentry = false, locks = {} }) {
     const [busy, setBusy] = useState(false);
     async function genKeypair() {
         setBusy(true);
@@ -142,17 +142,15 @@ export function StepVariant({ session, f, set, reentry = false }) {
                 CDN edge, or your origin server. Both variants run the same challenge/verify loop
                 shown below; this only changes what happens after a user enters a correct code —
                 highlighted on each diagram.</p>
-            {reentry && (
-                <Note kind="info">
-                    This deployment uses <strong>Variant {f.variant}</strong>. The variant is fixed
-                    after the first deploy{f.variant === 'B' ? '; you can still change the proof settings' : ''}.
-                </Note>
+            {locks.variant && (
+                <ResourceRow title="Enforcement variant"
+                    value={f.variant === 'B' ? 'Variant B — origin verifies the proof' : 'Variant A — edge enforces'}
+                    set locked={f.variant === 'B' ? `${locks.variant} You can still change the proof settings.` : locks.variant} />
             )}
             {reentry && f.variant === 'B' && (
                 <>
-                    <ResourceRow title="ES256 proof keypair"
-                        sub="Reused as deployed — your origin already trusts its public key."
-                        set={!!f.proofKey} value={f.proofKey?.name} />
+                    <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set={!!f.proofKey}
+                        locked={locks.proofKey} sub="Reused as deployed — your origin already trusts its public key." />
                     <ProofFields f={f} set={set} />
                 </>
             )}

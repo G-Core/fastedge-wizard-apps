@@ -111,6 +111,9 @@ resource" flows.
 | `label-set` | string | Badge text when set (default "set") |
 | `label-unset` | string | Badge text when unset (default "not set") |
 | `label-clear` | string | `aria-label` for the × button (default "Clear") |
+| `locked` | boolean | Can't change (e.g. fixed on Re-entry): compact row, neutral "🔒 locked" badge, no clear, actions hidden, `aria-disabled` |
+| `reason` | string | Why it's locked — replaces `sub` while `locked` |
+| `label-locked` | string | Badge text when locked (default "locked") |
 
 **Events**
 
@@ -120,6 +123,30 @@ resource" flows.
 
 The row builds its own title/sub/badge but never touches the host-supplied
 action children — they stay put, so a framework keeps DOM ownership.
+
+---
+
+### `<gc-locked>`
+
+Marks the fields inside it as locked and shows why, matching a locked
+`<gc-resource-row>`. Use it for anything a wizard can't change on Re-entry.
+
+```html
+<gc-locked reason="Fixed after the first deploy.">
+  <label>Auth prefix <input value="/auth/totp" disabled></label>
+</gc-locked>
+```
+
+It appends a `🔒 <reason>` line and nothing else: **disable the fields
+yourself**, so a framework keeps owning them. With no `reason` it renders its
+children unchanged, so you can wrap a field unconditionally. The portal's base
+`wizard.css` styles `:disabled` inputs (dashed border, no surface, muted text).
+
+**Where the reasons come from.** Fixed fields are declared in the SDK field map
+(`field.fixed(reason, …)`); `fields.locks(current)` returns `{ field: reason }`
+in Re-entry and `{}` in template mode, and `fields.save` refuses to change them.
+Host-fixed values (app name, CDN resource) aren't fields: lock those with your
+own reason when `current` is set.
 
 ---
 
@@ -176,7 +203,7 @@ idiomatic React props.
 
 ```jsx
 import '@gcore/wizard-step-kit';
-import { WizardShell, WizardStep, OptionalPanels, WizardPanel, ResourceRow, DeployProgress } from '@gcore/wizard-step-kit/react';
+import { WizardShell, WizardStep, OptionalPanels, WizardPanel, ResourceRow, DeployProgress, Locked } from '@gcore/wizard-step-kit/react';
 
 function MyWizard() {
     const [step, setStep] = React.useState(0);

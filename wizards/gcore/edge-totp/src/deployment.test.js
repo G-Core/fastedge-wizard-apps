@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fields, fromForm, loadForm, reentryValues, skeleton, toPlan } from './deployment.js';
+import { fields, fromForm, loadForm, lockedFields, reentryValues, skeleton, toPlan } from './deployment.js';
 
 const FORM = {
     authPrefix: '/auth/totp',
@@ -198,4 +198,18 @@ test('Re-entry: an unreadable field keeps its deployed value unless the user edi
         next.cdnRules.map((r) => r.ref),
         ['app-route', 'filter:*'],
     );
+});
+
+test('Re-entry locks: what the form must lock, with reasons; save refuses to change a fixed field', () => {
+    assert.deepEqual(lockedFields(null), {}, 'template mode locks nothing');
+
+    const live = { ...deployed(), revision: 'rev-1' };
+    const locks = lockedFields(live);
+    assert.deepEqual(Object.keys(locks).sort(), ['authPrefix', 'cdn', 'name', 'sessionKey', 'store', 'variant']);
+    assert.match(locks.store, /seeds live here/);
+
+    assert.throws(() => fields.save(fromForm({ ...FORM, store: { id: 8, name: 'other' } }), live), /"store" is fixed once deployed/);
+    assert.throws(() => fields.save(fromForm({ ...FORM, authPrefix: '/mfa' }), live), /"authPrefix" is fixed/);
+    const ok = fields.save(fromForm({ ...FORM, loginUrl: 'https://shop.example.com/new' }), live);
+    assert.equal(ok.fastedgeApps[0].env.MFA_LOGIN_URL, 'https://shop.example.com/new');
 });
