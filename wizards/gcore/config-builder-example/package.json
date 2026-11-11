@@ -6,7 +6,7 @@
         "build": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --minify --outfile=dist/main.js && esbuild src/styles.css --bundle --outfile=dist/styles.css && cp src/index.html dist/index.html",
         "dev": "pnpm run build && fastedge-wizard-dev dist",
         "dev:watch": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --watch --outfile=dist/main.js",
-        "test": "node --test src/config.test.js"
+        "test": "node --test src/*.test.js"
     },
     "dependencies": {
         "@gcoredev/fastedge-wizard-sdk": "latest",

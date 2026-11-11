@@ -1,17 +1,14 @@
-// The request-router config: a tree of conditions with an action on every leaf, saved as one JSON
-// env value (ROUTER_CONFIG) on one app (Ref `main`). Everything here is pure — no session, no React.
+// The request-router config: a tree of conditions with an action on every leaf. Everything here is
+// pure — no session, no React. How the config gets into and out of the app is in deployment.js.
 //
 //   { schemaVersion: 1, root: Node }
 //   Node   = { type, ...condition fields, children: Node[], action?: Action }
 //   Action = { kind: 'origin' | 'redirect' | 'rewrite' | 'respond', ..., headers?: [{ name, value }] }
 //
 // An inner node's action is the fallback when none of its children match; a leaf must have one.
-import { defineFieldMap, field } from '@gcoredev/fastedge-wizard-sdk';
-
 import { COUNTRIES } from './data/countries.js';
 
 export const SCHEMA_VERSION = 1;
-export const ENV_KEY = 'ROUTER_CONFIG';
 
 /**
  * The host caps a deployment.plan message at 1 MB (every app's env travels in it) and rejects a larger
@@ -226,7 +223,14 @@ export const configBytes = (config) => new TextEncoder().encode(JSON.stringify(c
 
 // ── Tree edits (immutable) ───────────────────────────────────────────────────
 
+// A node's path is its child indexes from the root: '' = root, '0.2' = root.children[0].children[2].
 const pathIndexes = (path) => (path === '' ? [] : path.split('.').map(Number));
+export const childPath = (path, i) => (path === '' ? String(i) : `${path}.${i}`);
+export const parentPath = (path) => path.split('.').slice(0, -1).join('.');
+const indexOf = (path) => Number(path.split('.').pop());
+
+/** The node at `path`, or undefined if there's none (e.g. after a removal). */
+export const nodeAt = (config, path) => pathIndexes(path).reduce((node, i) => node?.children[i], config.root);
 
 /** Replace the node at `path` with `fn(node)`. */
 export function updateNode(config, path, fn) {
@@ -238,35 +242,65 @@ export function updateNode(config, path, fn) {
     return { ...config, root: go(config.root, pathIndexes(path)) };
 }
 
-// ── Field map + plan ─────────────────────────────────────────────────────────
+/** Add a rule of `type` as the last child of `path`. Returns the new config and the new rule's path. */
+export function addRule(config, path, type) {
+    const at = nodeAt(config, path).children.length;
+    return { config: updateNode(config, path, (n) => ({ ...n, children: [...n.children, newNode(type)] })), path: childPath(path, at) };
+}
 
-export const fields = defineFieldMap({
-    config: field.env('main', ENV_KEY, {
-        codec: field.json({
-            parse: upgrade,
-            validate: (config) => {
-                const errors = validate(config);
-                if (Object.keys(errors).length) throw new Error('the config has validation errors');
-            },
-        }),
-    }),
-});
+export function removeRule(config, path) {
+    const i = indexOf(path);
+    return updateNode(config, parentPath(path), (n) => ({ ...n, children: n.children.filter((_, j) => j !== i) }));
+}
 
-/** Template mode: the one app, with no config yet — the field map writes it. */
-export const skeleton = ({ name, templateId }) => ({
-    fastedgeApps: [{ ref: 'main', name, api_type: 'wasi-http', source: { fromTemplateId: templateId }, env: {} }],
-});
+/** Swap the rule at `path` with its sibling `delta` places away (order decides which rule wins). Returns the rule's new path. */
+export function moveRule(config, path, delta) {
+    const i = indexOf(path);
+    const j = i + delta;
+    const parent = parentPath(path);
+    if (j < 0 || j >= nodeAt(config, parent).children.length) return { config, path };
+    const swapped = updateNode(config, parent, (n) => {
+        const children = [...n.children];
+        [children[i], children[j]] = [children[j], children[i]];
+        return { ...n, children };
+    });
+    return { config: swapped, path: childPath(parent, j) };
+}
 
-/** Deploy params for a saved state. Re-entry sends the revision it read; no CDN in this wizard. */
-export function toPlan(state, revision) {
-    const fastedgeApps = state.fastedgeApps.map(({ ref, name, api_type, source, env, secretRefs, storeRefs }) => ({
-        ref,
-        name,
-        api_type,
-        source,
-        env,
-        ...(secretRefs ? { secretRefs } : {}),
-        ...(storeRefs ? { storeRefs } : {}),
-    }));
-    return revision === undefined ? { fastedgeApps } : { fastedgeApps, revision };
+// ── One-line summaries (the outline) ─────────────────────────────────────────
+
+/** What a rule matches, without its type (the outline shows the type as a badge). */
+export function conditionLabel(node) {
+    switch (node.type) {
+        case 'root':
+            return 'All requests';
+        case 'country': {
+            const shown = node.countries.slice(0, 4).join(', ');
+            const more = node.countries.length > 4 ? ` +${node.countries.length - 4}` : '';
+            return `${shown || '(no country yet)'}${more}`;
+        }
+        case 'path':
+            return `${node.prefix}*`;
+        case 'header':
+            return `${node.name || '(no header name)'} ${node.operator}${node.operator === 'exists' ? '' : ` "${node.value}"`}`;
+        case 'device':
+            return node.device;
+        default:
+            return node.type;
+    }
+}
+
+export function actionLabel(action) {
+    switch (action.kind) {
+        case 'origin':
+            return `origin ${action.host || '?'}`;
+        case 'redirect':
+            return `redirect ${action.status} ${action.url}`;
+        case 'rewrite':
+            return `rewrite to ${action.path}`;
+        case 'respond':
+            return `respond ${action.status}`;
+        default:
+            return action.kind;
+    }
 }

@@ -2,14 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-    ENV_KEY,
+    actionLabel,
+    conditionLabel,
     configBytes,
     emptyConfig,
-    fields,
     newAction,
     newNode,
-    skeleton,
-    toPlan,
+    addRule,
+    moveRule,
+    nodeAt,
+    removeRule,
     updateNode,
     upgrade,
     validate,
@@ -38,10 +40,6 @@ const CONFIG = {
         ],
     },
 };
-
-const deployedWith = (env) => ({
-    fastedgeApps: [{ ref: 'main', name: 'router', api_type: 'wasi-http', source: { fromTemplateId: 1 }, env }],
-});
 
 test('a valid tree has no errors; the empty config only needs its origin filled in', () => {
     assert.deepEqual(validate(CONFIG), {});
@@ -89,40 +87,35 @@ test('upgrade: v1 passes through, v0 flat routes become path nodes, unknown vers
     assert.throws(() => upgrade([1]), /not a JSON object/);
 });
 
-test('field map: template mode writes compact JSON; Re-entry loads it back unchanged', () => {
-    const state = fields.save({ config: CONFIG }, skeleton({ name: 'router', templateId: 1 }));
-    assert.equal(state.fastedgeApps[0].env[ENV_KEY], JSON.stringify(CONFIG));
-    assert.deepEqual(toPlan(state), { fastedgeApps: state.fastedgeApps });
-
-    const live = { ...state, fastedgeApps: [{ ...state.fastedgeApps[0], env: { ...state.fastedgeApps[0].env, HAND: 'x' } }] };
-    const { values, errors } = fields.load(live);
-    assert.deepEqual(errors, {});
-    assert.deepEqual(values.config, CONFIG);
-    assert.deepEqual(fields.save(values, live), live, 'unchanged config + hand-added key survive');
-    assert.equal(toPlan(live, 'rev-1').revision, 'rev-1');
-});
-
-test('field map: broken JSON, an unknown version and a missing key are reported, with the raw value', () => {
-    assert.equal(fields.load(deployedWith({ [ENV_KEY]: '{not json' })).errors.config.code, 'invalid');
-
-    const future = fields.load(deployedWith({ [ENV_KEY]: '{"schemaVersion":9}' })).errors.config;
-    assert.equal(future.code, 'invalid');
-    assert.equal(future.raw, '{"schemaVersion":9}');
-
-    assert.equal(fields.load(deployedWith({})).errors.config.code, 'missing');
-});
-
-test('field map: an invalid tree is refused on save', () => {
-    assert.throws(() => fields.save({ config: emptyConfig() }, skeleton({ name: 'r', templateId: 1 })), /validation errors/);
-});
-
 test('tree edits are immutable and address nodes by path', () => {
     const added = updateNode(CONFIG, '0', (n) => ({ ...n, children: [...n.children, newNode('device')] }));
     assert.equal(added.root.children[0].children[1].type, 'device');
     assert.equal(CONFIG.root.children[0].children.length, 1);
+    assert.equal(nodeAt(CONFIG, '0.0').prefix, '/shop');
+    assert.equal(conditionLabel(nodeAt(CONFIG, '0.0')), '/shop*');
+    assert.equal(nodeAt(CONFIG, '5'), undefined);
+});
 
+test('outline labels say what a rule matches and where it sends the request', () => {
+    assert.equal(conditionLabel(CONFIG.root.children[0]), 'FR, BE');
+    assert.equal(conditionLabel({ ...newNode('country'), countries: ['A', 'B', 'C', 'D', 'E', 'F'] }), 'A, B, C, D +2');
+    assert.equal(conditionLabel({ ...newNode('header'), name: 'X-Tier', operator: 'exists' }), 'X-Tier exists');
+    assert.equal(actionLabel(CONFIG.root.children[0].action), 'redirect 302 https://fr.example.com/');
 });
 
 test('size is measured in encoded bytes', () => {
     assert.equal(configBytes({ a: 'é' }), JSON.stringify({ a: 'é' }).length + 1);
+});
+
+test('rules: add returns the new path; move swaps siblings (order decides the winner); remove drops one', () => {
+    const added = addRule(CONFIG, '', 'header');
+    assert.equal(added.path, '2');
+    assert.equal(nodeAt(added.config, '2').type, 'header');
+
+    const up = moveRule(added.config, '2', -1);
+    assert.equal(up.path, '1');
+    assert.deepEqual(up.config.root.children.map((c) => c.type), ['country', 'header', 'device']);
+    assert.equal(moveRule(up.config, '0', -1).path, '0', 'the first rule cannot move up');
+
+    assert.deepEqual(removeRule(up.config, '1').root.children.map((c) => c.type), ['country', 'device']);
 });

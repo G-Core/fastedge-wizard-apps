@@ -165,6 +165,10 @@ non-empty. See `mock-host/stubs.js` in the installed SDK for the defaults.
 The mock host validates all fixture files against the SDK's Zod schemas at
 startup and warns on any mismatch. Pass `--validate-only` for a CI-safe check.
 
+The dev server fetches the live portal `wizard.css` from the CDN. To try a `wizard.css` change before it deploys,
+build it in fastedge-frontend (`pnpm build:wizard-css`) and pass
+`--wizard-css <path-to>/fastedge-frontend/dist/wizard/wizard.css`.
+
 **Brand preview (rebranded portals).** A white-label portal sends its brand colour to the
 wizard as `--gc-wizard-brand`. To preview it, put a `wizard-brand.json` at the repo root:
 

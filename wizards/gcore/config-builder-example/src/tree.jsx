@@ -1,4 +1,8 @@
-// The recursive route editor. Presentational: every edit goes up as onEdit(path, node => node).
+// The Routes step's two panes. Presentational:
+//   field edits go up as onEdit(path, node => node);
+//   add / move / remove go up as apply(config => ({ config, path })), and `path` becomes the selection.
+//   Outline     — the whole tree: one card per rule, numbered in the order rules are checked
+//   RuleEditor  — the form for the one selected rule: When (its condition) / Then (its action)
 import { useState } from 'react';
 
 import {
@@ -9,8 +13,15 @@ import {
     MAX_BODY,
     NODE_TYPES,
     REDIRECT_STATUSES,
+    actionLabel,
+    addRule,
+    conditionLabel,
+    moveRule,
     newAction,
-    newNode,
+    nodeAt,
+    parentPath,
+    removeRule,
+    childPath,
 } from './config.js';
 import { COUNTRIES } from './data/countries.js';
 
@@ -117,12 +128,13 @@ function Headers({ headers = [], onChange }) {
 
 function Action({ action, isLeaf, onChange }) {
     const kinds = Object.entries(ACTION_KINDS);
-    const options = isLeaf ? kinds : [['', 'None — only the conditions below'], ...kinds];
+    // No action yet: say so, rather than showing the first kind as if it were chosen.
+    const options = [['', isLeaf ? 'Choose an action…' : 'None'], ...kinds];
     const set = (patch) => onChange({ ...action, ...patch });
 
     return (
         <div className="cb-action">
-            <Select label={isLeaf ? 'Action' : 'Fallback action (when no condition below matches)'}
+            <Select label={isLeaf ? 'Action' : 'Fallback (when no rule inside matches)'}
                 value={action?.kind ?? ''} options={options}
                 onChange={(kind) => onChange(kind ? newAction(kind) : undefined)} />
             {action?.kind === 'origin' && (
@@ -150,41 +162,121 @@ function Action({ action, isLeaf, onChange }) {
     );
 }
 
-export function NodeEditor({ node, path, errors, onEdit, onRemove }) {
-    const own = errors[path] ?? [];
-    const edit = (patch) => onEdit(path, (n) => ({ ...n, ...patch }));
+function AddRule({ node, path, apply, label = '+ Add rule' }) {
     const allowed = ALLOWED_CHILDREN[node.type];
-    const childPath = (i) => (path === '' ? String(i) : `${path}.${i}`);
+    if (!allowed.length) return null;
+    return (
+        <select className="cb-add" value="" aria-label={`Add a rule under ${conditionLabel(node)}`}
+            onChange={(e) => e.target.value && apply((c) => addRule(c, path, e.target.value))}>
+            <option value="">{label}…</option>
+            {allowed.map((t) => <option key={t} value={t}>{NODE_TYPES[t].label}</option>)}
+        </select>
+    );
+}
+
+function Card({ onSelect, current, className = '', children }) {
+    const cls = `cb-rule ${className}`;
+    return onSelect ? (
+        <button type="button" className={cls} aria-current={current || undefined} onClick={onSelect}>{children}</button>
+    ) : (
+        <div className={cls}>{children}</div>
+    );
+}
+
+function Branch({ node, path, index, errors, selected, onSelect, apply }) {
+    const isRoot = path === '';
+    const hasChildren = node.children.length > 0;
+    const select = onSelect && (() => onSelect(path));
 
     return (
-        <section className={`cb-node${own.length ? ' cb-node--error' : ''}`} aria-label={NODE_TYPES[node.type].label}>
-            <div className="cb-node__head">
-                <span className="cb-node__title">{NODE_TYPES[node.type].label}</span>
-                {onRemove && <button type="button" onClick={onRemove}>Remove</button>}
-            </div>
-            <Condition node={node} edit={edit} />
-            <Action action={node.action} isLeaf={!node.children.length}
-                onChange={(action) => onEdit(path, (n) => {
-                    const { action: _old, ...rest } = n;
-                    return action ? { ...rest, action } : rest;
-                })} />
+        <li>
+            <Card onSelect={select} current={selected === path} className={isRoot ? 'cb-rule--root' : ''}>
+                {index !== undefined && <span className="cb-rule__num">{index + 1}</span>}
+                <span className="cb-badge">{isRoot ? 'Start' : NODE_TYPES[node.type].label}</span>
+                <span className="cb-rule__match">{conditionLabel(node)}</span>
+                {!hasChildren && node.action && <span className="cb-rule__then">→ {actionLabel(node.action)}</span>}
+                {errors[path] && <span className="cb-rule__err">needs fixing</span>}
+            </Card>
+            {(hasChildren || (isRoot && apply)) && (
+                <ul>
+                    {node.children.map((child, i) => (
+                        <Branch key={childPath(path, i)} node={child} path={childPath(path, i)} index={i}
+                            errors={errors} selected={selected} onSelect={onSelect} apply={apply} />
+                    ))}
+                    {apply && ALLOWED_CHILDREN[node.type].length > 0 && (
+                        <li><AddRule node={node} path={path} apply={apply} /></li>
+                    )}
+                    {hasChildren && (
+                        <li>
+                            <Card onSelect={select} className="cb-rule--otherwise">
+                                <span className="cb-badge">Otherwise</span>
+                                <span className="cb-rule__then">
+                                    → {node.action ? actionLabel(node.action) : 'no fallback'}
+                                </span>
+                            </Card>
+                        </li>
+                    )}
+                </ul>
+            )}
+        </li>
+    );
+}
+
+/** The tree. Without onSelect/apply it's read-only (the Review step). */
+export function Outline({ config, errors = {}, selected, onSelect, apply }) {
+    return (
+        <ul className="cb-outline" aria-label="Routing rules">
+            <Branch node={config.root} path="" errors={errors} selected={selected} onSelect={onSelect} apply={apply} />
+        </ul>
+    );
+}
+
+/** The form for the rule at `path`. */
+export function RuleEditor({ config, path, errors, onEdit, apply }) {
+    const node = nodeAt(config, path);
+    const isRoot = path === '';
+    const own = errors[path] ?? [];
+    const edit = (patch) => onEdit(path, (n) => ({ ...n, ...patch }));
+    const parent = isRoot ? null : nodeAt(config, parentPath(path));
+    const index = isRoot ? 0 : Number(path.split('.').pop());
+
+    return (
+        <section className="cb-editor" aria-label={`Edit rule: ${conditionLabel(node)}`}>
+            <span className="cb-badge">{isRoot ? 'Start' : NODE_TYPES[node.type].label}</span>
+            <h3>{isRoot ? 'All requests' : `Rule ${index + 1} of ${parent.children.length} under ${conditionLabel(parent)}`}</h3>
+            <p className="cb-lede">
+                {isRoot
+                    ? 'Every request starts here. The rules under it are checked top to bottom; the first that matches wins.'
+                    : 'Rules at the same level are checked top to bottom; the first that matches wins. Move this rule to change the order.'}
+            </p>
+            {!isRoot && (
+                <div className="cb-editor__order">
+                    <button type="button" disabled={index === 0} onClick={() => apply((c) => moveRule(c, path, -1))}>↑ Move up</button>
+                    <button type="button" disabled={index === parent.children.length - 1}
+                        onClick={() => apply((c) => moveRule(c, path, 1))}>↓ Move down</button>
+                    <button type="button" onClick={() => apply((c) => ({ config: removeRule(c, path), path: parentPath(path) }))}>
+                        Remove
+                    </button>
+                </div>
+            )}
             {own.length > 0 && (
                 <ul className="cb-errors">
                     {own.map((e) => <li key={e}>{e}</li>)}
                 </ul>
             )}
-            {(node.children.length > 0 || allowed.length > 0) && (
-                <div className="cb-children">
-                    {node.children.map((child, i) => (
-                        <NodeEditor key={childPath(i)} node={child} path={childPath(i)} errors={errors} onEdit={onEdit}
-                            onRemove={() => onEdit(path, (n) => ({ ...n, children: n.children.filter((_, j) => j !== i) }))} />
-                    ))}
-                    {allowed.length > 0 && (
-                        <Select label="Add a condition" value=""
-                            options={[['', 'Choose a type…'], ...allowed.map((t) => [t, NODE_TYPES[t].label])]}
-                            onChange={(type) => type && onEdit(path, (n) => ({ ...n, children: [...n.children, newNode(type)] }))} />
-                    )}
-                </div>
+            <h4>When</h4>
+            {isRoot ? <p className="cb-lede">Any request.</p> : <Condition node={node} edit={edit} />}
+            <h4>Then</h4>
+            <Action action={node.action} isLeaf={!node.children.length}
+                onChange={(action) => onEdit(path, (n) => {
+                    const { action: _old, ...rest } = n;
+                    return action ? { ...rest, action } : rest;
+                })} />
+            {ALLOWED_CHILDREN[node.type].length > 0 && (
+                <>
+                    <h4>{isRoot ? 'Rules' : 'Narrow it further'}</h4>
+                    <AddRule node={node} path={path} apply={apply} label="+ Add a rule inside this one" />
+                </>
             )}
         </section>
     );

@@ -74,3 +74,9 @@ the file contains no other custom properties.
 |-------|-------------|---------|
 | `--gc-wizard-radius` | `8px` | Border radius for cards / inputs |
 | `--gc-wizard-font` | Noto Sans, system-ui… | Font stack |
+
+### Layout (set by the wizard, read by the base)
+
+| Token | Default | Purpose |
+|-------|---------|---------|
+| `--gc-wizard-max-width` | `900px` (fallback, not defined in `wizard.css`) | Page width cap on `body`. A wizard with side-by-side panes sets `:root { --gc-wizard-max-width: 1280px; }` in its `styles.css`. Don't override `body { max-width }` directly — the portal stylesheet loads after yours and wins |

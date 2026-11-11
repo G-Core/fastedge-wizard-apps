@@ -1,6 +1,8 @@
 // Config builder example — the G-Core reference for a wizard that edits one complex JSON config.
-// Template mode starts from an empty tree; Re-entry loads the deployed tree with the SDK field map
-// (config.js) and saves it back. Pure logic lives in config.js; the tree editor in tree.jsx.
+//   deployment.js  how the form binds to the app (start here)
+//   config.js      the config format: validation, upgrade, tree edits
+//   tree.jsx       the Routes step's outline + rule editor
+// This file: boot (template mode vs Re-entry), the steps, and deploy.
 import { useEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { connect, WizardError } from '@gcoredev/fastedge-wizard-sdk';
@@ -8,19 +10,17 @@ import '@gcore/wizard-step-kit'; // side-effect: registers the custom elements
 import { DeployProgress, WizardShell, WizardStep } from '@gcore/wizard-step-kit/react';
 
 import {
-    ENV_KEY,
     ENV_READ_LIMIT_BYTES,
     MAX_CONFIG_BYTES,
     SIZE_WARN_BYTES,
     configBytes,
     emptyConfig,
-    fields,
-    skeleton,
-    toPlan,
+    nodeAt,
     updateNode,
     validate,
 } from './config.js';
-import { NodeEditor } from './tree.jsx';
+import { ENV_KEY, loadForm, toDeployPlan } from './deployment.js';
+import { Outline, RuleEditor } from './tree.jsx';
 
 const hostOrigin = new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
 
@@ -89,20 +89,38 @@ function SizeMeter({ bytes }) {
     );
 }
 
+function JsonPreview({ config }) {
+    return (
+        <details>
+            <summary>{ENV_KEY} as JSON</summary>
+            <pre className="cb-preview">{JSON.stringify(config, null, 2)}</pre>
+        </details>
+    );
+}
+
 function StepRoutes({ config, setConfig, errors }) {
+    const [selected, setSelected] = useState('');
+    const path = nodeAt(config, selected) ? selected : '';
     const count = Object.keys(errors).length;
+    // add / move / remove: apply the change, then select the rule it returns
+    const apply = (op) => {
+        const next = op(config);
+        setConfig(next.config);
+        setSelected(next.path);
+    };
     return (
         <>
             <h2 tabIndex={-1}>Routes</h2>
-            <p className="cb-lede">Requests start at <strong>All requests</strong> and take the first matching
-                condition, top to bottom. A branch with no matching child uses its fallback action.</p>
-            <NodeEditor node={config.root} path="" errors={errors}
-                onEdit={(path, fn) => setConfig((c) => updateNode(c, path, fn))} />
-            {count > 0 && <Note kind="danger">{count} branch(es) need fixing before you can continue.</Note>}
-            <details>
-                <summary>Live JSON preview</summary>
-                <pre className="cb-preview">{JSON.stringify(config, null, 2)}</pre>
-            </details>
+            <p className="cb-lede">Every request starts at <strong>All requests</strong>. Rules at the same level are
+                checked in order (1, 2, 3…) and the first that matches wins; if none match, that level&apos;s{' '}
+                <strong>Otherwise</strong> applies. Select a rule to edit it.</p>
+            {count > 0 && <Note kind="danger">{count} rule(s) need fixing before you can continue.</Note>}
+            <div className="cb-split">
+                <Outline config={config} errors={errors} selected={path} onSelect={setSelected} apply={apply} />
+                <RuleEditor config={config} path={path} errors={errors} apply={apply}
+                    onEdit={(p, fn) => setConfig((c) => updateNode(c, p, fn))} />
+            </div>
+            <JsonPreview config={config} />
         </>
     );
 }
@@ -113,8 +131,9 @@ function StepReview({ name, config, deploy }) {
             <h2 tabIndex={-1}>Review &amp; deploy</h2>
             <p className="cb-lede">App <strong>{name}</strong> gets this <code>{ENV_KEY}</code>. You confirm the
                 change in a portal dialog before anything is written.</p>
+            <Outline config={config} />
             <SizeMeter bytes={configBytes(config)} />
-            <pre className="cb-preview">{JSON.stringify(config, null, 2)}</pre>
+            <JsonPreview config={config} />
             <DeployProgress state={deploy} />
         </>
     );
@@ -124,10 +143,10 @@ function StepReview({ name, config, deploy }) {
 
 function Wizard({ session, template, current }) {
     const reentry = current !== null;
-    const loaded = useMemo(() => (reentry ? fields.load(current) : null), [current, reentry]);
-    const [name, setName] = useState(reentry ? current.fastedgeApps.find((a) => a.ref === 'main')?.name ?? '' : 'router');
-    const [config, setConfig] = useState(() => loaded?.values.config ?? emptyConfig());
-    const [loadError, setLoadError] = useState(loaded?.errors.config ?? null);
+    const [initial] = useState(() => loadForm(current)); // deployment.js: live deployment → form
+    const [name, setName] = useState(initial.name);
+    const [config, setConfig] = useState(initial.config);
+    const [loadError, setLoadError] = useState(initial.error);
     const [step, setStep] = useState(0);
     const [deploy, setDeploy] = useState({ status: 'idle', plan: null, progress: [], result: null, error: null });
 
@@ -143,8 +162,8 @@ function Wizard({ session, template, current }) {
     async function handleFinish() {
         let planParams;
         try {
-            const base = reentry ? current : skeleton({ name: name.trim(), templateId: template.id });
-            planParams = toPlan(fields.save({ config }, base), current?.revision);
+            // deployment.js: form → deploy params (create in template mode, update in Re-entry)
+            planParams = toDeployPlan({ name: name.trim(), config }, { current, templateId: template?.id });
         } catch (err) {
             setDeploy({ status: 'error', plan: null, progress: [], result: null, error: err.message });
             return;
