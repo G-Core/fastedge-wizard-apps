@@ -61,8 +61,16 @@ class GcWizardShell extends HTMLElement {
         window.removeEventListener('scroll', this.#onScroll);
     }
 
+    // Only the user scrolling UP unsticks. Our own smooth scroll fires scroll events mid-animation,
+    // and fast-growing content (re-entry updates stream progress lines ms apart) moves the bottom
+    // away while it runs — treating "not at the bottom yet" as "user scrolled away" lost the follow.
+    #lastScrollY = 0;
     #onScroll = () => {
-        if (this.#isVisible()) this.#stuckToBottom = this.#isAtBottom();
+        if (!this.#isVisible()) return;
+        const y = window.scrollY;
+        if (this.#isAtBottom()) this.#stuckToBottom = true;
+        else if (y < this.#lastScrollY) this.#stuckToBottom = false;
+        this.#lastScrollY = y;
     };
 
     #isAtBottom() {
