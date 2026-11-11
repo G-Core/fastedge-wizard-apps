@@ -33,7 +33,16 @@ Ask the user in a single message:
    `WIZARD_SOURCE_CONFIG` and launch the wizard (this is the *anchor* template
    — for a multi-companion wizard it's the one the portal launches from, not
    necessarily a template that does real work; edge-sso's launch template is
-   an inert placeholder).
+   an inert placeholder). The launch template's app becomes the deployment's
+   **anchor** — the first app in the wizard's plan — so for a multi-app wizard it
+   must be the template whose app the wizard lists first in its plan (for
+   edge-totp: the CDN filter, not the wasi-http app). Its `api_type` also decides
+   which portal listing the wizard is launched from and where Finished returns.
+3. **Re-entry**: does the wizard support reopening a deployed app to edit it?
+   Only say yes if the wizard reads `deployment.current()` and sends a
+   desired-state plan with `revision` (it has a `src/deployment.js` field map —
+   see `/wizard-bindings`) and its e2e covers the Re-entry render. TARGET.md or
+   `context/wizards/<name>/DOCS.md` usually says.
 
 If `wizards/<selected-wizard-path>/TARGET.md` exists, read it first and propose the launch
 template id + companion ids parsed from its "Target templates" table (look for
@@ -41,7 +50,7 @@ a row whose Role column says **Launch**; all other listed real template ids
 become `companionTemplateIds`). Show the parsed values and ask the user to
 confirm or correct them — never proceed on a silent guess.
 
-Do not proceed until wizard name and launch template id are confirmed.
+Do not proceed until wizard name, launch template id and the Re-entry answer are confirmed.
 
 ### 1 — Fetch the current template
 
@@ -70,6 +79,15 @@ If the wizard has companions (from TARGET.md or user input), add
 `context/INDEX.md` "Wiring a wizard to the portal" and the edge-totp precedent
 in `context/wizards/edge-totp/DOCS.md`. Never invent companion ids; they must
 come from TARGET.md or explicit user confirmation.
+
+If the wizard supports Re-entry, add `"reentry":true` (a boolean — any other
+value makes the portal reject the whole config). Without it the portal shows no
+"Launch Wizard" button on deployed apps and refuses the app route.
+
+**When it takes effect:** the portal stamps this config into the anchor app's
+env when a user deploys. Apps deployed *before* `reentry` was set keep their
+old copy and stay closed to Re-entry — so set it before users deploy, and tell
+the user that existing deployments won't pick it up.
 
 JSON-stringify this object — it becomes the `default_value` string inside the
 param's `metadata`, which is itself a JSON string (matches the shape every
@@ -120,7 +138,8 @@ though this change only touches `params` — send them unchanged.
 ### 7 — Report
 
 - Launch template id + name
-- The exact `WIZARD_SOURCE_CONFIG` value written (repo/ref/wizardDir/cdn/companions)
+- The exact `WIZARD_SOURCE_CONFIG` value written (repo/ref/wizardDir/cdn/companions/reentry)
+- If `reentry` is on: only apps deployed from now on can be reopened
 - Whether this was a fresh param or an update to an existing one
 - Reminder: the portal only resolves this once `gh-pages/<wizard-dir>` exists —
   if CI hasn't published yet, the template will 404 until it does.

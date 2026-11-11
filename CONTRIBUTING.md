@@ -198,6 +198,17 @@ The Gcore template `edge-totp` is the canonical worked example — two apps
 `mandatory: false` but fail-closes the filter when absent in Profile B. See
 `context/PARAM_CONSTRAINTS.md` for the full example and the shared-secret recipe.
 
+**Bind each value once (field map).** Declare where every form value lives in
+the deployment in `src/deployment.js` with the SDK's `defineFieldMap` — one
+declaration per value, bound to every app that shares it. The same map builds
+the first deploy and, if the wizard opts in to Re-entry, loads a deployed setup
+back into the form and saves the edits; `field.fixed` marks values that can't
+change once deployed. Start from `wizards/gcore/config-builder-example/src/deployment.js`
+(one app) or `wizards/gcore/edge-totp/src/deployment.js` (two apps, secrets,
+stores, CDN rules, locks); the rules are in the SDK's `docs/runtime-rules.md`.
+With Claude Code, `/wizard-bindings` writes the map, its tests and a Re-entry
+fixture from the Bindings table that `/wizard-intake` drafts.
+
 ### Selecting secrets & stores
 
 Each secret/store a wizard needs maps to **one** SDK call, chosen by *what the value is* —
