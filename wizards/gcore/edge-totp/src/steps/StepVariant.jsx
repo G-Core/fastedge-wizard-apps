@@ -2,7 +2,20 @@ import { useState } from 'react';
 import { OptionalPanels, WizardPanel } from '@gcore/wizard-step-kit/react';
 import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
-import { Field } from '../components.jsx';
+import { Field, Note } from '../components.jsx';
+
+function ProofFields({ f, set }) {
+    return (
+        <>
+            <Field label="Proof TTL (seconds)" value={f.proofTtl}
+                onChange={(v) => set({ proofTtl: v })}
+                hint="How long the one-time proof cookie is valid. Short is intentional — it's single-use. Default: 90" />
+            <Field label="Proof cookie name" value={f.proofCookie}
+                onChange={(v) => set({ proofCookie: v })}
+                hint="Name of the one-time ES256 proof cookie. Default: mfa_proof" />
+        </>
+    );
+}
 
 // The full request-time gate, including the challenge round trip. Duplicated
 // per variant (rather than shared) so each panel can highlight its own
@@ -107,7 +120,7 @@ function VariantBDiagram() {
     );
 }
 
-export function StepVariant({ session, f, set }) {
+export function StepVariant({ session, f, set, reentry = false }) {
     const [busy, setBusy] = useState(false);
     async function genKeypair() {
         setBusy(true);
@@ -129,7 +142,23 @@ export function StepVariant({ session, f, set }) {
                 CDN edge, or your origin server. Both variants run the same challenge/verify loop
                 shown below; this only changes what happens after a user enters a correct code —
                 highlighted on each diagram.</p>
-            <OptionalPanels onChange={(sel) => set({ variant: sel[0] || '' })}>
+            {reentry && (
+                <Note kind="info">
+                    This deployment uses <strong>Variant {f.variant}</strong>. The variant is fixed
+                    after the first deploy{f.variant === 'B' ? '; you can still change the proof settings' : ''}.
+                </Note>
+            )}
+            {reentry && f.variant === 'B' && (
+                <>
+                    <ResourceRow title="ES256 proof keypair"
+                        sub="Reused as deployed — your origin already trusts its public key."
+                        set={!!f.proofKey} value={f.proofKey?.name} />
+                    <ProofFields f={f} set={set} />
+                </>
+            )}
+            {!reentry && (
+            <OptionalPanels value={f.variant ? [f.variant] : []}
+                onChange={(sel) => set({ variant: sel[0] || '' })}>
                 <WizardPanel value="A" label="Variant A — edge enforces (recommended)">
                     <VariantADiagram />
                     <p>The CDN blocks any request to a protected path unless it carries a valid
@@ -161,14 +190,10 @@ export function StepVariant({ session, f, set }) {
                         set={!!f.proofKey} value={f.proofKey?.name} onClear={() => set({ proofKey: null })}>
                         <button onClick={genKeypair} disabled={busy}>Generate keypair</button>
                     </ResourceRow>
-                    <Field label="Proof TTL (seconds)" value={f.proofTtl}
-                        onChange={(v) => set({ proofTtl: v })}
-                        hint="How long the one-time proof cookie is valid. Short is intentional — it's single-use. Default: 90" />
-                    <Field label="Proof cookie name" value={f.proofCookie}
-                        onChange={(v) => set({ proofCookie: v })}
-                        hint="Name of the one-time ES256 proof cookie. Default: mfa_proof" />
+                    <ProofFields f={f} set={set} />
                 </WizardPanel>
             </OptionalPanels>
+            )}
         </>
     );
 }

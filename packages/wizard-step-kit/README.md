@@ -80,6 +80,10 @@ Add `multiple` to the container for checkbox behaviour (multi-select).
 |---|---|
 | `selection-change` | `{ selected: string[] }` |
 
+**Property:** `selected` (`string[]`) reads the selection, and setting it selects those panels
+without firing `selection-change`. Use it to show a form loaded from an existing deployment. In React,
+pass `<OptionalPanels value={[...]}>`.
+
 ---
 
 ### `<gc-resource-row>`

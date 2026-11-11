@@ -39,6 +39,8 @@ const WIZARDS = findWizards(wizardsDir).filter((name) => !E2E_SKIP.has(name));
 type BridgeOverrides = {
     context?: Record<string, unknown>;
     templatesById?: Record<string, unknown>;
+    /** `deployment.current` result — Re-entry wizards load their form from it. */
+    current?: Record<string, unknown>;
 };
 const OVERRIDES: Record<string, BridgeOverrides> = {
     // edge-totp reads launchTemplateId + companionTemplateIds from context.get,
@@ -96,6 +98,72 @@ const OVERRIDES: Record<string, BridgeOverrides> = {
     },
 };
 
+// Re-entry: the wizard reopened on its deployed app (launchTemplateId null) loads its form from
+// deployment.current(). One extra snapshot + a11y pass per wizard listed here.
+const REENTRY: Record<string, BridgeOverrides> = {
+    'gcore/edge-totp': {
+        context: {
+            launchTemplateId: null,
+            companionTemplateIds: [],
+            theme: 'light',
+            locale: 'en',
+            feAppId: 101,
+            managedAppIds: [101, 102],
+            featureFlags: {},
+        },
+        current: {
+            revision: 'rev-1',
+            cdnResourceId: 900,
+            fastedgeApps: [
+                {
+                    ref: 'filter',
+                    name: 'totp-filter',
+                    api_type: 'proxy-wasm',
+                    source: { fromTemplateId: 1 },
+                    env: {
+                        AUTH_PREFIX: '/auth/totp',
+                        MFA_AUDIENCE: 'https://shop.example.com',
+                        MFA_SESSION_COOKIE: 'mfa_session',
+                    },
+                    secretRefs: { MFA_SESSION_KEY: 11 },
+                },
+                {
+                    ref: 'app',
+                    name: 'totp-app',
+                    api_type: 'wasi-http',
+                    source: { fromTemplateId: 2 },
+                    env: {
+                        AUTH_PREFIX: '/auth/totp',
+                        MFA_AUDIENCE: 'https://shop.example.com',
+                        MFA_SESSION_COOKIE: 'mfa_session',
+                        KV_STORE_ID: '7',
+                    },
+                    secretRefs: { MFA_SESSION_KEY: 11, HANDOFF_KEY: 12, ENROLL_API_KEY: 13, GCORE_API_TOKEN: 14 },
+                    storeRefs: { TOTP_USER_SEEDS: 7 },
+                },
+            ],
+            cdnOrigins: [{ ref: 'app-origin', name: 'totp-app-origin', appRef: 'app' }],
+            cdnRules: [
+                { ref: 'app-route', name: 'totp-auth-route', rule: '^/auth/totp', weight: 1, originGroupRef: 'app-origin' },
+                {
+                    ref: 'filter:/checkout',
+                    name: 'totp-mfa-filter-1',
+                    rule: '^/checkout',
+                    weight: 10,
+                    fastedgeFilter: { appRef: 'filter', hook: 'on_request_headers', interruptOnError: true },
+                },
+            ],
+            secrets: [
+                { id: 11, name: 'totp-mfa-session-key' },
+                { id: 12, name: 'totp-handoff-key' },
+                { id: 13, name: 'totp-enroll-api-key' },
+                { id: 14, name: 'platform-api-token' },
+            ],
+            stores: [{ id: 7, name: 'totp-seeds' }],
+        },
+    },
+};
+
 // Package example pages — no SDK bridge, just theme the body class and screenshot.
 const PACKAGE_EXAMPLES = ['wizard-step-kit'];
 
@@ -126,6 +194,8 @@ async function connectBridge(page: Page, theme: 'light' | 'dark', overrides: Bri
                 let data: unknown;
                 if (intent === 'context.get') {
                     data = overrides.context ?? {};
+                } else if (intent === 'deployment.current') {
+                    data = overrides.current ?? null;
                 } else if (intent === 'fastedge.templates.read') {
                     data = overrides.templatesById?.[String(params['id'])] ?? null;
                 } else if (intent.endsWith('.list')) {
@@ -191,6 +261,26 @@ for (const wizard of WIZARDS) {
     test(`${wizard} — no critical a11y violations`, async ({ page }) => {
         await page.goto(wizardUrl(wizard));
         await connectBridge(page, 'light', OVERRIDES[wizard] ?? {});
+        const results = await new AxeBuilder({ page }).analyze();
+        // ponytail: explicit cast because axe types only resolve after pnpm install
+        expect(results.violations.filter((v: { impact: unknown }) => v.impact === 'critical')).toEqual([]);
+    });
+}
+
+for (const [wizard, overrides] of Object.entries(REENTRY)) {
+    const snapshotName = `${wizard.replace(/\//g, '-')}-reentry`;
+
+    for (const theme of ['light', 'dark'] as const) {
+        test(`${wizard} (re-entry) renders in gc-theme-${theme}`, async ({ page }) => {
+            await page.goto(wizardUrl(wizard));
+            await connectBridge(page, theme, overrides);
+            await expect(page).toHaveScreenshot(`${snapshotName}-gc-theme-${theme}.png`, { maxDiffPixelRatio: 0.05 });
+        });
+    }
+
+    test(`${wizard} (re-entry) — no critical a11y violations`, async ({ page }) => {
+        await page.goto(wizardUrl(wizard));
+        await connectBridge(page, 'light', overrides);
         const results = await new AxeBuilder({ page }).analyze();
         // ponytail: explicit cast because axe types only resolve after pnpm install
         expect(results.violations.filter((v: { impact: unknown }) => v.impact === 'critical')).toEqual([]);

@@ -1,7 +1,7 @@
 import { OptionalPanels, WizardPanel } from '@gcore/wizard-step-kit/react';
 import { Note, Field } from '../components.jsx';
 
-export function StepRouting({ f, set }) {
+export function StepRouting({ f, set, reentry = false }) {
     return (
         <>
             <h2 tabIndex={-1}>Routing &amp; token binding</h2>
@@ -16,14 +16,18 @@ export function StepRouting({ f, set }) {
                 label="Auth path prefix"
                 value={f.authPrefix}
                 onChange={(v) => set({ authPrefix: v })}
-                hint="Where the challenge/verify app is mounted. The CDN path rule and the filter bypass both use this. Default: /auth/totp"
+                disabled={reentry}
+                hint={reentry
+                    ? 'Fixed after the first deploy.'
+                    : 'Where the challenge/verify app is mounted. The CDN path rule and the filter bypass both use this. Default: /auth/totp'}
             />
             <h3>Protection scope</h3>
             <p className="totp-lede">
                 Which paths on this CDN resource require MFA. The filter always bypasses the auth
                 prefix above and <code>/health</code>, whichever scope you choose.
             </p>
-            <OptionalPanels onChange={(sel) => set({ protectionScope: sel[0] || '' })}>
+            <OptionalPanels value={f.protectionScope ? [f.protectionScope] : []}
+                onChange={(sel) => set({ protectionScope: sel[0] || '' })}>
                 <WizardPanel value="all" label="Protect the entire site">
                     <p>Every path on this CDN resource requires a valid <code>mfa_session</code>. Choose
                         this only if the whole site sits behind MFA.</p>

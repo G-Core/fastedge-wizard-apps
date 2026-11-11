@@ -91,10 +91,11 @@ export function WizardStep({ title, children }) {
 }
 
 /**
- * @param {{ multiple?: boolean, onChange?: (selected: string[]) => void,
+ * @param {{ multiple?: boolean, value?: string[], onChange?: (selected: string[]) => void,
  *           children?: React.ReactNode }} props
+ * `value` (optional) controls the selection — pass it to show a preselected panel.
  */
-export function OptionalPanels({ multiple = false, onChange, children }) {
+export function OptionalPanels({ multiple = false, value, onChange, children }) {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -110,6 +111,14 @@ export function OptionalPanels({ multiple = false, onChange, children }) {
         if (!el) return;
         el.toggleAttribute('multiple', multiple);
     }, [multiple]);
+
+    // Joined so a fresh array with the same panels doesn't re-run the effect every render.
+    const selected = value?.join('\n');
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || selected === undefined) return;
+        el.selected = selected ? selected.split('\n') : [];
+    }, [selected]);
 
     return h('gc-optional-panels', { ref }, children);
 }

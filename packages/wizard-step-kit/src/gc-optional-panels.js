@@ -11,6 +11,10 @@
  *
  * Events (all bubble):
  *   selection-change — detail: { selected: string[] }
+ *
+ * Property:
+ *   selected — string[]; setting it selects those panels without firing selection-change
+ *              (e.g. a form loaded from an existing deployment).
  */
 class GcOptionalPanels extends HTMLElement {
     static observedAttributes = ['multiple'];
@@ -42,6 +46,16 @@ class GcOptionalPanels extends HTMLElement {
             if (first) this.#selected.add(first);
             this.#updateDisplay();
         }
+    }
+
+    get selected() {
+        return [...this.#selected];
+    }
+
+    set selected(values) {
+        const next = this.hasAttribute('multiple') ? values : values.slice(0, 1);
+        this.#selected = new Set(next);
+        this.#updateDisplay();
     }
 
     #panels() {

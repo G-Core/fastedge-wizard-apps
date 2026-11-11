@@ -15,7 +15,7 @@ export function StepReview({ f, deploy, filterT, appT }) {
                 </Note>
             )}
             <dl className="totp-summary">
-                <dt>CDN resource</dt><dd>{f.cdn?.cname} (#{f.cdn?.id})</dd>
+                <dt>CDN resource</dt><dd>{f.cdn?.cname ? `${f.cdn.cname} ` : ''}(#{f.cdn?.id})</dd>
                 <dt>Apps</dt><dd>{f.name}-filter ({filterT?.name}) + {f.name}-app ({appT?.name})</dd>
                 <dt>Auth prefix</dt><dd>{f.authPrefix}</dd>
                 <dt>Protection scope</dt>

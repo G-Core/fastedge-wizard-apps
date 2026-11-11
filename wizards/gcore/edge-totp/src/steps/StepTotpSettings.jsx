@@ -11,7 +11,8 @@ export function StepTotpSettings({ f, set }) {
             </p>
 
             <h3>TOTP authenticator</h3>
-            <OptionalPanels onChange={(sel) => set({ totpMode: sel[0] || 'default' })}>
+            <OptionalPanels value={f.totpMode === 'custom' ? ['custom'] : []}
+                onChange={(sel) => set({ totpMode: sel[0] || 'default' })}>
                 <WizardPanel value="custom" label="Customize TOTP settings">
                     <Field label="Issuer name" value={f.totpIssuer}
                         onChange={(v) => set({ totpIssuer: v })}
@@ -32,7 +33,8 @@ export function StepTotpSettings({ f, set }) {
             </OptionalPanels>
 
             <h3>Session &amp; policy</h3>
-            <OptionalPanels onChange={(sel) => set({ policyMode: sel[0] || 'default' })}>
+            <OptionalPanels value={f.policyMode === 'custom' ? ['custom'] : []}
+                onChange={(sel) => set({ policyMode: sel[0] || 'default' })}>
                 <WizardPanel value="custom" label="Customize session &amp; policy">
                     <Field label="Session TTL (seconds)" value={f.sessionTtl}
                         onChange={(v) => set({ sessionTtl: v })}

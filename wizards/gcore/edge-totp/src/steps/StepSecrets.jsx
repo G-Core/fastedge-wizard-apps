@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 
-export function StepSecrets({ session, f, set }) {
+export function StepSecrets({ session, f, set, reentry = false }) {
     const generatedElsewhere = f.variant === 'B'
         ? ` Variant B also uses a fifth — the ES256 proof key — which you already generated back in the Variant step; it is not listed here.`
         : '';
@@ -45,12 +45,18 @@ export function StepSecrets({ session, f, set }) {
                 (<strong>Platform API token</strong>). Generate each below — the session key is
                 <strong> shared</strong>, created once and bound to both apps.{generatedElsewhere}
             </p>
-            <ResourceRow title="Session signing key (shared)"
-                sub="HS256, edge-internal. App signs mfa_session; filter verifies it." set={!!f.sessionKey}
-                value={f.sessionKey?.name} onClear={() => set({ sessionKey: null })}>
-                <button onClick={generate('sessionKey', 'Session signing key (shared)', `${f.name}-mfa-session-key`, 'Shared HS256 mfa_session key')}
-                    disabled={!!busy}>Select</button>
-            </ResourceRow>
+            {reentry && f.sessionKey ? (
+                <ResourceRow title="Session signing key (shared)"
+                    sub="Fixed after the first deploy — changing it would sign every visitor out."
+                    set={!!f.sessionKey} value={f.sessionKey?.name} />
+            ) : (
+                <ResourceRow title="Session signing key (shared)"
+                    sub="HS256, edge-internal. App signs mfa_session; filter verifies it." set={!!f.sessionKey}
+                    value={f.sessionKey?.name} onClear={() => set({ sessionKey: null })}>
+                    <button onClick={generate('sessionKey', 'Session signing key (shared)', `${f.name}-mfa-session-key`, 'Shared HS256 mfa_session key')}
+                        disabled={!!busy}>Select</button>
+                </ResourceRow>
+            )}
             <ResourceRow title="Handoff key"
                 sub="HS256, shared with your origin. Copy the generated value into your origin's login code." set={!!f.handoff}
                 value={f.handoff?.name} onClear={() => set({ handoff: null })}>
