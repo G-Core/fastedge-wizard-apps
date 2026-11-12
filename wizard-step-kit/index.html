@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>wizard-step-kit demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <link rel="stylesheet" href="./example.css" />
+</head>
+<body class="gc-theme-light">
+
+<main>
+    <h1>wizard-step-kit</h1>
+
+    <section>
+        <h2>Step shell (vanilla)</h2>
+        <gc-wizard-shell id="demo-shell" can-advance>
+            <gc-wizard-step title="App">
+                <h3>Configure your app</h3>
+                <label>App name<br><input type="text" value="my-app" /></label>
+            </gc-wizard-step>
+            <gc-wizard-step title="Secrets">
+                <h3>Add secrets</h3>
+                <p>No secrets configured.</p>
+            </gc-wizard-step>
+            <gc-wizard-step title="Deploy">
+                <h3>Review &amp; deploy</h3>
+                <p>Ready to deploy.</p>
+            </gc-wizard-step>
+        </gc-wizard-shell>
+        <pre id="shell-log" class="event-log"></pre>
+    </section>
+
+    <section>
+        <h2>Optional panels (vanilla)</h2>
+        <gc-optional-panels id="demo-panels">
+            <gc-wizard-panel value="new" label="Create a new app">
+                <p>A fresh FastEdge app will be created for you.</p>
+            </gc-wizard-panel>
+            <gc-wizard-panel value="existing" label="Link an existing app">
+                <label>App ID<br><input type="text" placeholder="12345" /></label>
+            </gc-wizard-panel>
+        </gc-optional-panels>
+        <pre id="panels-log" class="event-log"></pre>
+    </section>
+
+    <section>
+        <h2>Optional panels — multi-select</h2>
+        <gc-optional-panels id="demo-multi" multiple>
+            <gc-wizard-panel value="cdn" label="Enable CDN">
+                <p>Routes traffic through the CDN layer.</p>
+            </gc-wizard-panel>
+            <gc-wizard-panel value="waf" label="Enable WAF">
+                <p>Web Application Firewall protection.</p>
+            </gc-wizard-panel>
+            <gc-wizard-panel value="ddos" label="Enable DDoS protection">
+                <p>L3/L4 mitigation always on.</p>
+            </gc-wizard-panel>
+        </gc-optional-panels>
+        <pre id="multi-log" class="event-log"></pre>
+    </section>
+
+    <section>
+        <h2>Resource row (vanilla)</h2>
+        <gc-resource-row id="demo-row-unset" title="Session signing key (shared)"
+            sub="HS256, edge-internal. Not yet created.">
+            <button>Generate</button>
+        </gc-resource-row>
+        <gc-resource-row id="demo-row-set" title="KV store for TOTP seeds"
+            sub="store #4821" set clearable>
+            <button>Replace</button>
+        </gc-resource-row>
+        <pre id="row-log" class="event-log"></pre>
+    </section>
+
+    <section>
+        <h2>Deploy progress (vanilla)</h2>
+        <gc-deploy-progress id="demo-deploy"></gc-deploy-progress>
+        <p><button id="btn-deploy">Simulate a deploy</button></p>
+    </section>
+
+    <div class="theme-toggle">
+        <button id="btn-theme">Toggle dark theme</button>
+    </div>
+</main>
+
+<script src="./main.js" type="module"></script>
+</body>
+</html>

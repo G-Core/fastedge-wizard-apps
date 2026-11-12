@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- wizard.css is injected automatically by the proxy/dev server — no <link> needed for it. -->
+    <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+    <!-- Hidden until connect() resolves so the theme class is on <body> before first paint. -->
+    <main hidden>
+        <gc-wizard-shell label-finish="Deploy">
+
+            <gc-wizard-step title="Overview">
+                <h2 tabindex="-1">HTML to Markdown</h2>
+                <p class="html2md-lede">
+                    Converts a CDN resource's HTML responses to Markdown whenever a client sends
+                    <code>Accept: text/markdown</code> — useful for AI agents that prefer Markdown over HTML.
+                </p>
+                <div class="html2md-note">
+                    <strong>What gets created:</strong>
+                    <ul>
+                        <li>One FastEdge app (<code>proxy-wasm</code>) running the HTML→Markdown filter.</li>
+                        <li>It's wired directly onto your CDN resource across all three request/response hooks
+                            — no CDN rule or path scoping needed.</li>
+                    </ul>
+                </div>
+                <label class="html2md-field">
+                    <span>Deployment name</span>
+                    <input id="app-name" type="text" value="html2md" autocomplete="off" />
+                    <span class="html2md-hint">Used to name the FastEdge app (e.g. html2md-filter).</span>
+                </label>
+            </gc-wizard-step>
+
+            <gc-wizard-step title="CDN resource">
+                <h2 tabindex="-1">Choose the CDN resource</h2>
+                <p class="html2md-lede">Pick the CDN delivery domain to attach the filter to.</p>
+                <gc-resource-row id="cdn-row" title="CDN resource" sub="The filter attaches here." clearable>
+                    <button type="button" data-action="pick-resource">Select resource</button>
+                </gc-resource-row>
+            </gc-wizard-step>
+
+            <gc-wizard-step title="Review">
+                <h2 tabindex="-1">Review &amp; deploy</h2>
+                <dl class="html2md-summary">
+                    <dt>App name</dt>
+                    <dd id="review-name">—</dd>
+                    <dt>CDN resource</dt>
+                    <dd id="review-cdn">—</dd>
+                </dl>
+                <p class="html2md-lede">
+                    Click <strong>Deploy</strong> to attach the filter. You will be asked to confirm in a portal
+                    dialog.
+                </p>
+                <gc-deploy-progress id="deploy-progress"></gc-deploy-progress>
+            </gc-wizard-step>
+
+        </gc-wizard-shell>
+    </main>
+    <script type="module" src="./main.js"></script>
+</body>
+</html>
