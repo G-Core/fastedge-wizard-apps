@@ -30,7 +30,7 @@ const emptyProvider = { clientId: '', clientSecret: null, redirectUri: '' };
 
 // ── Wizard root ────────────────────────────────────────────────────────────
 
-const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
+const PARTIAL_APPLY = "Some changes couldn't be undone. Check the apps and CDN settings in the portal and remove what was left behind before deploying again.";
 
 function Wizard({ session, authT, filterT }) {
     const [step, setStep] = useState(0);

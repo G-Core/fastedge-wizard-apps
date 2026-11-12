@@ -23,7 +23,7 @@ let pickedResource = null;
 let step = 0;
 let deployState = { status: 'idle', plan: null, progress: [], result: null, error: null };
 
-const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
+const PARTIAL_APPLY = "Some changes couldn't be undone. Check the apps and CDN settings in the portal and remove what was left behind before deploying again.";
 
 function setDeployState(patch) {
     deployState = { ...deployState, ...patch };
