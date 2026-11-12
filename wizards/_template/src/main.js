@@ -1,6 +1,11 @@
 import { connect, WizardError } from '@gcoredev/fastedge-wizard-sdk';
 
-const hostOrigin = new URLSearchParams(location.search).get('hostOrigin');
+// The portal appends ?hostOrigin=<its-own-origin> when it opens the wizard.
+// connect() validates that the INIT message comes from exactly this origin —
+// it rejects anything else. The fallback keeps the dev mock host working
+// (which passes hostOrigin itself) and is never reached in a real portal.
+const hostOrigin =
+    new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
 const main = document.querySelector('main');
 
 try {
