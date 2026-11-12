@@ -9,7 +9,7 @@
         "test": "node --test src/*.test.js"
     },
     "dependencies": {
-        "@gcoredev/fastedge-wizard-sdk": "latest",
+        "@gcoredev/fastedge-wizard-sdk": "0.0.6",
         "@gcore/wizard-step-kit": "file:../../../packages/wizard-step-kit",
         "react": "^19.0.0",
         "react-dom": "^19.0.0"

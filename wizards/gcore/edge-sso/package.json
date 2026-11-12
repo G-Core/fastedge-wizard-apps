@@ -1,19 +1,19 @@
 {
-    "name": "edge-sso",
-    "private": true,
-    "type": "module",
-    "scripts": {
-        "build": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --minify --outfile=dist/main.js && esbuild src/styles.css --bundle --outfile=dist/styles.css && cp src/index.html dist/index.html",
-        "dev": "pnpm run build && fastedge-wizard-dev dist",
-        "dev:watch": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --watch --outfile=dist/main.js"
-    },
-    "dependencies": {
-        "@gcoredev/fastedge-wizard-sdk": "0.0.5",
-        "@gcore/wizard-step-kit": "file:../../../packages/wizard-step-kit",
-        "react": "^19.0.0",
-        "react-dom": "^19.0.0"
-    },
-    "devDependencies": {
-        "esbuild": "^0.28.1"
-    }
+  "name": "edge-sso",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --minify --outfile=dist/main.js && esbuild src/styles.css --bundle --outfile=dist/styles.css && cp src/index.html dist/index.html",
+    "dev": "pnpm run build && fastedge-wizard-dev dist",
+    "dev:watch": "esbuild src/main.jsx --bundle --format=esm --jsx=automatic --watch --outfile=dist/main.js"
+  },
+  "dependencies": {
+    "@gcoredev/fastedge-wizard-sdk": "0.0.6",
+    "@gcore/wizard-step-kit": "file:../../../packages/wizard-step-kit",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
 }
