@@ -124,5 +124,5 @@ The repo-root Playwright suite screenshots the Overview step in template mode an
 
 ## SDK version
 
-Tracks `"latest"`. It needs an SDK release that has the field map (`defineFieldMap`, `field.json`). Until that's published,
-build against a local SDK checkout: symlink `node_modules/@gcoredev/fastedge-wizard-sdk` to it. `pnpm install` resets the symlink.
+Pinned to `0.0.6`, the first release with the field map (`defineFieldMap`, `field.json`, `field.fixed`) and
+`deployment.current()`. Bump with `node scripts/bump-sdk.mjs <version>` from the repo root.

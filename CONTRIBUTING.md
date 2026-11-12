@@ -209,6 +209,34 @@ stores, CDN rules, locks); the rules are in the SDK's `docs/runtime-rules.md`.
 With Claude Code, `/wizard-bindings` writes the map, its tests and a Re-entry
 fixture from the Bindings table that `/wizard-intake` drafts.
 
+### Re-entry: reopening a deployed wizard
+
+With Re-entry, a user can reopen your wizard from an app it deployed and change the setup. It is
+off until the launch template opts in with `"reentry": true` in its `WIZARD_SOURCE_CONFIG`; ask for
+that only once the wizard handles the points below. The portal keeps no saved answers: the live
+deployment is the source of truth, so hand edits made in the dashboard show up in the form.
+
+What the wizard must do on Re-entry (`context.get()` returns `launchTemplateId: null`):
+
+- **Load** the form with `deployment.current()` and `fields.load(current)`. Show anything in
+  `errors` (a value edited by hand, a broken JSON config) with its raw value, and offer a reset or a
+  replacement. A value the user leaves as loaded keeps its deployed value: don't save it.
+- **Lock** what can't change: the app names and the CDN resource (the host refuses to change them),
+  plus `fields.locks(current)` for your `field.fixed` fields. Use the step kit's locked rows and
+  `<Locked>`, which show the reason. Both reference wizards wrap this in a `lockedFields(current)`.
+- **Save** with `fields.save(values, current)` and deploy the complete desired state with the
+  `revision` from `current()`. Keys and objects the map doesn't own pass through untouched. The
+  portal shows the user a per-field review before applying.
+- **Finish** only when the result's `status` is `complete`. After `rolled_back` the user can retry;
+  after `partial`, ask them to close and reopen the wizard.
+- Don't call `apps.create`, `cdn.origins.create`, `cdn.rules.create` or `cdn.resources.pick` on
+  Re-entry (they're refused): new objects go in the plan.
+
+Test it locally: add `fixtures/deployment/current.json` and open the mock host with
+`?mode=reentry` (a template-mode deploy in the mock host also becomes the live state). Add the
+wizard to `REENTRY` in `e2e/theme.spec.ts` so its Re-entry form gets a snapshot and an a11y pass.
+The rules in full are in the SDK's `docs/runtime-rules.md` (§Template mode and re-entry).
+
 ### Selecting secrets & stores
 
 Each secret/store a wizard needs maps to **one** SDK call, chosen by *what the value is* —
