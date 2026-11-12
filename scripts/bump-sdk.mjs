@@ -61,12 +61,18 @@ if (!flags.has('--no-verify')) {
   }
 }
 
-// Real wizards only — underscore templates/examples stay on "latest".
-const targets = [];
-for (const e of readdirSync(join(root, 'wizards'), { withFileTypes: true })) {
-  if (!e.isDirectory() || e.name.startsWith('_') || e.name.startsWith('.')) continue;
-  targets.push(join(root, 'wizards', e.name, 'package.json'));
+// Real wizards only — underscore templates/examples stay on "latest". A wizard is any directory (at any
+// depth, e.g. wizards/gcore/edge-totp) with its own package.json, as build-all.mjs discovers them.
+function findWizards(dir) {
+  const found = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (!e.isDirectory() || e.name.startsWith('_') || e.name.startsWith('.') || e.name === 'node_modules') continue;
+    const pkg = join(dir, e.name, 'package.json');
+    found.push(...(existsSync(pkg) ? [pkg] : findWizards(join(dir, e.name))));
+  }
+  return found;
 }
+const targets = findWizards(join(root, 'wizards'));
 
 const dry = flags.has('--dry-run');
 let changed = 0;

@@ -91,10 +91,11 @@ export function WizardStep({ title, children }) {
 }
 
 /**
- * @param {{ multiple?: boolean, onChange?: (selected: string[]) => void,
+ * @param {{ multiple?: boolean, value?: string[], onChange?: (selected: string[]) => void,
  *           children?: React.ReactNode }} props
+ * `value` (optional) controls the selection — pass it to show a preselected panel.
  */
-export function OptionalPanels({ multiple = false, onChange, children }) {
+export function OptionalPanels({ multiple = false, value, onChange, children }) {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -110,6 +111,14 @@ export function OptionalPanels({ multiple = false, onChange, children }) {
         if (!el) return;
         el.toggleAttribute('multiple', multiple);
     }, [multiple]);
+
+    // Joined so a fresh array with the same panels doesn't re-run the effect every render.
+    const selected = value?.join('\n');
+    useEffect(() => {
+        const el = ref.current;
+        if (!el || selected === undefined) return;
+        el.selected = selected ? selected.split('\n') : [];
+    }, [selected, multiple]); // re-apply after `multiple` changes: dropping it collapses the selection
 
     return h('gc-optional-panels', { ref }, children);
 }
@@ -127,7 +136,11 @@ export function WizardPanel({ value, label, children }) {
  *           labels?: { set?: string, unset?: string, clear?: string },
  *           children?: React.ReactNode }} props
  */
-export function ResourceRow({ title, sub, value, set = false, onClear, labels = {}, children }) {
+/**
+ * `locked`: a reason string (e.g. from the SDK field map's `locks()`) locks the row — neutral
+ * "🔒 locked" badge, no clear, actions hidden, the reason in place of `sub`. Falsy → not locked.
+ */
+export function ResourceRow({ title, sub, value, set = false, locked, onClear, labels = {}, children }) {
     const ref = useRef(null);
 
     useEffect(() => {
@@ -151,7 +164,9 @@ export function ResourceRow({ title, sub, value, set = false, onClear, labels = 
         if (!el) return;
         el.toggleAttribute('set', set);
         el.toggleAttribute('clearable', !!onClear);
-    }, [set, onClear]);
+        el.toggleAttribute('locked', !!locked);
+        if (typeof locked === 'string') el.setAttribute('reason', locked); else el.removeAttribute('reason');
+    }, [set, onClear, locked]);
 
     useEffect(() => {
         const el = ref.current;
@@ -163,6 +178,15 @@ export function ResourceRow({ title, sub, value, set = false, onClear, labels = 
     }, [labels]);
 
     return h('gc-resource-row', { ref }, children);
+}
+
+/**
+ * Locks the fields inside it and shows "🔒 <reason>" under them. Falsy `reason` → renders the
+ * children unchanged, so wrap unconditionally: `<Locked reason={locks.authPrefix}>…</Locked>`.
+ * It doesn't disable the fields — pass `disabled={!!reason}` to them yourself.
+ */
+export function Locked({ reason, children }) {
+    return h('gc-locked', reason ? { reason } : {}, children);
 }
 
 /**

@@ -68,6 +68,10 @@ itself contain a `/` (e.g. a branch like `feat/my-wizard`):
 WIZARD_SOURCE_CONFIG={"repo":"G-Core/FastEdge-Wizard-apps","ref":"gh-pages","wizardDir":"<wizard-dir>","cdn":"jsdelivr"}
 ```
 
+Optional keys: `"companionTemplateIds": [<id>, …]` (other templates the wizard deploys alongside the
+launch one) and `"reentry": true` (users can reopen the wizard on an app it deployed — set it only
+once the wizard handles Re-entry; see CONTRIBUTING §Re-entry).
+
 The portal reads `WIZARD_SOURCE_CONFIG` and builds the proxy path from `repo` +
 `ref` + `wizardDir` + `cdn` — percent-encoding any `/` inside `ref` so it
 survives as a single URL path segment; the proxy decodes it back before
@@ -126,11 +130,30 @@ session.cdn.origins.list()
 session.cdn.origins.create(params)               // consent required
 session.cdn.rules.list({ resourceId })
 session.cdn.rules.create(params)                 // consent required
+session.deployment.current()                     // Re-entry only: live state in plan shape + revision (template mode: denied)
 session.deployment.plan(params)                  // dry-run, no consent
 session.deployment.apply({ planId })             // consent required
 session.deployment.deploy(params, { onPlan, onProgress }) // convenience: plan → apply + progress (edge-totp uses this)
 session.on('deployment.progress', handler)
 session.dispose()
+```
+
+Re-entry (app mode) refuses `fastedge.apps.create`, `cdn.origins.create`, `cdn.rules.create` and
+`cdn.resources.pick` with `denied`; new objects go in the plan. `deploy()` resolves with
+`status: 'complete' | 'rolled_back' | 'partial'`: only `complete` is finished.
+
+Field map (pure functions, no bridge calls; see the SDK's `docs/runtime-rules.md`):
+
+```js
+import { defineFieldMap, field, fieldError, optional } from '@gcoredev/fastedge-wizard-sdk';
+
+const fields = defineFieldMap({ name: field.env(appRef, 'KEY', opts?), ... });
+fields.load(state)          // → { values, errors }  errors: { code: 'missing' | 'invalid' | 'diverged', message, raw? }
+fields.save(values, state)  // → a copy with only mapped keys changed; throws if a fixed field would change (Re-entry)
+fields.locks(current)       // → { field: reason } for loaded field.fixed fields; {} for null (template mode)
+// field.env · field.json({ parse, validate }) · field.secret · field.store · field.keypair
+// field.custom({ writes, load, save }) · field.fixed(reason, f) · field.REMOVE
+optional(() => session.fastedge.secrets.pickOrCreate()) // null when the user dismisses a picker
 ```
 
 ### Mock host
@@ -164,6 +187,10 @@ non-empty. See `mock-host/stubs.js` in the installed SDK for the defaults.
 
 The mock host validates all fixture files against the SDK's Zod schemas at
 startup and warns on any mismatch. Pass `--validate-only` for a CI-safe check.
+
+The dev server fetches the live portal `wizard.css` from the CDN. To try a `wizard.css` change before it deploys,
+build it in fastedge-frontend (`pnpm build:wizard-css`) and pass
+`--wizard-css <path-to>/fastedge-frontend/dist/wizard/wizard.css`.
 
 **Brand preview (rebranded portals).** A white-label portal sends its brand colour to the
 wizard as `--gc-wizard-brand`. To preview it, put a `wizard-brand.json` at the repo root:
@@ -243,9 +270,10 @@ your fork can serve wizards.
 | Wizard | Directory | Status | Notes |
 |--------|-----------|--------|-------|
 | Intent reference (all v1 write intents, heavily commented) | `wizards/_example-intents/` | Active (dev-only, not published) | See `src/main.js` — copy patterns from here |
-| edge-totp (two-app: `proxy-wasm` filter + `wasi-http` app, CDN wiring) | `wizards/gcore/edge-totp/` | Active — reference React / multi-app wizard | Built in the "real wizard" experiment; canonical example for CDN rules/origins, shared secrets, Edge Storage binding, and Profile A/B |
+| edge-totp (two-app: `proxy-wasm` filter + `wasi-http` app, CDN wiring) | `wizards/gcore/edge-totp/` | Active — reference React / multi-app wizard | Built in the "real wizard" experiment; canonical example for CDN rules/origins, shared secrets, Edge Storage binding, Variant A/B, and Re-entry over CDN rules (field map) |
+| config-builder-example (single `wasi-http` app, one JSON env value) | `wizards/gcore/config-builder-example/` | Active — reference single-app / Re-entry wizard (SDK 0.0.6) | Canonical example for a wizard that builds one complex JSON config: recursive tree editor, `field.json` with a `schemaVersion` upgrade, Re-entry, bundled reference data |
 | edge-sso (two-app: `proxy-wasm` filter + `wasi-http` auth-app, 3 variants via `SSO_VARIANT`) | `wizards/gcore/edge-sso/` | Active — reference multi-variant wizard | 2 templates total; `SSO_VARIANT` written identically to both selects gate-only/cookie/header behaviour at runtime — no per-variant template selection. Canonical example for variant-by-param design and ES256-keypair vs. shared-secret session signing |
-| html2md (single `proxy-wasm` app, zero params, resource-level CDN wiring) | `wizards/gcore/html2md/` | Blocked on SDK release — see `context/wizards/html2md/DOCS.md` | Canonical example for `deployment.plan`'s `cdnResourceFastedgeHandlers` (resource-level `options.fastedge`, not a path rule) — the only way to reach `on_response_body`/`on_request_body` |
+| html2md (single `proxy-wasm` app, zero params, resource-level CDN wiring) | `wizards/gcore/html2md/` | Blocked on portal host deployment — see `context/wizards/html2md/DOCS.md` | Canonical example for `deployment.plan`'s `cdnResourceFastedgeHandlers` (resource-level `options.fastedge`, not a path rule) — the only way to reach `on_response_body`/`on_request_body` |
 
 > Starters (not wizards): `wizards/_template` (vanilla), `wizards/_template-react` (React).
 

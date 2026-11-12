@@ -1,6 +1,6 @@
 ---
 name: sync-wizard-fixtures
-description: Fetch live Gcore data, present it for selection, then write chosen fixtures into a wizard's fixtures/ directory. Covers templates, apps, secrets, KV stores, CDN resources, CDN origin groups, and CDN rules. Fudges IDs so real resource IDs are not committed to source control.
+description: Fetch live Gcore data, present it for selection, then write chosen fixtures into a wizard's fixtures/ directory. Covers templates, apps, secrets, KV stores, CDN resources, CDN origin groups, CDN rules, and a deployed wizard's live state for Re-entry (deployment/current.json). Fudges IDs so real resource IDs are not committed to source control.
 ---
 
 Sync live Gcore API data into wizard fixture files, with interactive selection.
@@ -28,7 +28,7 @@ Ask the user two things in a single message:
    `acme-corp-482913/onboarding-wizard` — and ask which one to update. If only
    one exists, confirm rather than silently assuming.
 
-2. **Resource types**: Ask which fixture types to sync. Present all seven options and let them pick any subset:
+2. **Resource types**: Ask which fixture types to sync. Present all eight options and let them pick any subset:
 
    ```
    Which resource types do you want to sync? (pick any combination)
@@ -41,6 +41,10 @@ Ask the user two things in a single message:
      g) cdn-rules       → fixtures/cdn/rules.json
                           (requires a CDN resource to pull rules from — you will be asked
                            which resource if cdn-resources is not also selected)
+     h) deployment      → fixtures/deployment/current.json
+                          (the live state of one deployment this wizard made — what
+                           deployment.current() returns on Re-entry; you will be asked
+                           for its anchor app)
 
    ("all", "a b c", "just templates", "all except cdn", etc.)
    ```
@@ -71,6 +75,9 @@ Fetch this even if only `cdn-rules` was selected (needed to identify which resou
 **CDN origin groups** — `GET /cdn/origin_groups?limit=200`
 Response: each item has `{ id, name }`.
 Note: CDN API.
+
+**Deployment** — requires the anchor app; do NOT fetch in this step. It is read
+in Step 3 once the user names the anchor.
 
 **CDN rules** — requires a CDN resource ID; do NOT fetch in this step.
 Rules are fetched after the user selects a CDN resource in Step 2.
@@ -167,6 +174,47 @@ Accept flexible input — match by name, number, description, or the user's own 
 
 ### 3 — Fetch full details for selected items
 
+**Deployment** (if selected) — rebuild what the portal's `deployment.current()`
+returns, from the anchor app:
+
+1. Ask which deployed app is the anchor: the app made from the wizard's launch
+   template (list the account's apps whose `template` is that template, if known).
+2. `GET /fastedge/v1/apps/{anchorId}` and parse its env key `WIZARD_DATA_STORE`
+   (JSON written by the portal). Use `managedRefs`:
+   `{ fastedgeApps: {ref: appId}, cdnOriginGroups: {ref: id}, cdnRules: {ref: ruleId} }`,
+   plus `managedCdnResourceIds`. No `WIZARD_DATA_STORE`, or no `managedRefs`
+   → stop: this app wasn't deployed by a Re-entry-capable wizard.
+3. For each `managedRefs.fastedgeApps` entry, `GET /fastedge/v1/apps/{id}` and build:
+   ```json
+   {
+     "ref": "<ref>",
+     "name": "<name>",
+     "api_type": "wasi-http | proxy-wasm",
+     "source": { "fromTemplateId": <template> }  // or { "binaryId": <binary> } when template is null
+     "env": <env with every WIZARD_* key removed>,
+     "secretRefs": { "<binding>": <secrets[binding].id> },   // omit if none
+     "storeRefs": { "<binding>": <stores[binding].id> }      // omit if none
+   }
+   ```
+   Collect `{ id, name }` from each app's `secrets` and `stores` bags into the
+   top-level `secrets` and `stores` arrays (deduplicated by id).
+4. CDN (only if `managedRefs.cdnOriginGroups` or `cdnRules` has entries; exactly one
+   id in `managedCdnResourceIds` — otherwise stop and report):
+   - `cdnResourceId` = that id.
+   - Each origin group: `GET /cdn/origin_groups/{id}` →
+     `{ ref, name, appRef }`, where `appRef` is the Ref of the app whose id is
+     `sources[0].config.app_id`.
+   - Each rule: `GET /cdn/resources/{resourceId}/rules/{ruleId}` →
+     `{ ref, name, rule, weight?, originGroupRef?, fastedgeFilter? }`:
+     `originGroupRef` is the Ref of `originGroup`; `fastedgeFilter` is
+     `{ appRef, hook, interruptOnError }` from whichever of
+     `options.fastedge.on_request_headers` / `on_response_headers` is `enabled`.
+   - A rule or origin pointing at an app/group outside `managedRefs` → stop and
+     report it (the portal fails the same way).
+   With no CDN entries, set `cdnResourceId` only if `managedCdnResourceIds` has
+   exactly one id.
+5. `revision`: `"1"` (the mock host only checks that plans pass back the value it gave).
+
 For each **selected template**, fetch full details to get `binary_id` and `params`:
 ```
 GET /fastedge/v1/template/{id}
@@ -245,6 +293,14 @@ Build maps for each selected type:
 - `cdnResourceIdMap`: real_id → 12000001, 12000002... (large ints match CDN ID conventions)
 - `originIdMap`: real_id → 500001, 500002...
 - `ruleIdMap`: real_id → 600001, 600002...
+- Deployment (if selected) — reuse the maps above where the same id is already
+  mapped, else extend them: `source.fromTemplateId` via `templateIdMap` (a
+  template not in the map gets the next free id ≥ 20 — never 1–19, which the mock
+  host treats as launch/companions), `secretRefs`/`secrets[].id` via
+  `secretIdMap`, `storeRefs`/`stores[].id` via `storeIdMap`, `cdnResourceId` via
+  `cdnResourceIdMap`, `source.binaryId` → 1, 2… Refs are not ids — keep them.
+  Also scrub env values that embed real ids or account-specific URLs/hostnames
+  the user wouldn't want committed (ask when unsure).
 
 Apply maps — cross-references are re-linked so the fixture set stays internally consistent:
 - Each template: `id = templateIdMap[id]`
@@ -270,6 +326,7 @@ The schema keys use slash-path format — access with bracket notation. Validate
 - `fixtureSchemas['cdn/resources'].parse(selectedCdnResources)`
 - `fixtureSchemas['cdn/origins'].parse(selectedOrigins)`
 - `fixtureSchemas['cdn/rules'].parse(selectedRules)`
+- `fixtureSchemas['deployment/current'].parse(deployment)`
 
 If any parse fails, report the Zod error and stop — do NOT write files. Suggest running `/check-api-drift` in `fastedge-wizard-sdk`.
 
@@ -288,6 +345,13 @@ CDN fixtures → `wizards/<selected-wizard-path>/fixtures/cdn/`:
 - `origins.json` — if cdn-origins was selected
 - `rules.json` — if cdn-rules was selected (flat array across all selected CDN resources)
 
-All files: pretty-printed JSON arrays.
+Deployment fixture → `wizards/<selected-wizard-path>/fixtures/deployment/current.json`
+— if deployment was selected. It is a single object, not an array. Before
+overwriting an existing one, show a short diff and confirm.
+
+All other files: pretty-printed JSON arrays.
+
+Test it: `pnpm run dev`, open the mock host with `?mode=reentry` — the wizard
+should open pre-filled. (The side panel's Load/Save also reads/writes this file.)
 
 Report: how many of each type were written, and remind the user that IDs have been fudged (real IDs are not in these files).

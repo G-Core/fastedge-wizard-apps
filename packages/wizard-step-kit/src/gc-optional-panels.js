@@ -11,6 +11,10 @@
  *
  * Events (all bubble):
  *   selection-change — detail: { selected: string[] }
+ *
+ * Property:
+ *   selected — string[]; setting it selects those panels without firing selection-change
+ *              (e.g. a form loaded from an existing deployment).
  */
 class GcOptionalPanels extends HTMLElement {
     static observedAttributes = ['multiple'];
@@ -44,6 +48,16 @@ class GcOptionalPanels extends HTMLElement {
         }
     }
 
+    get selected() {
+        return [...this.#selected];
+    }
+
+    set selected(values) {
+        const next = this.hasAttribute('multiple') ? values : values.slice(0, 1);
+        this.#selected = new Set(next);
+        this.#updateDisplay();
+    }
+
     #panels() {
         return [...this.querySelectorAll(':scope > gc-wizard-panel')];
     }
@@ -55,7 +69,8 @@ class GcOptionalPanels extends HTMLElement {
 
             const val = panel.getAttribute('value') ?? '';
             panel.setAttribute('role', 'option');
-            panel.setAttribute('aria-selected', 'false');
+            // From the stored selection: `selected` may have been set before this panel existed.
+            panel.setAttribute('aria-selected', String(this.#selected.has(val)));
             panel.setAttribute('tabindex', '0');
             panel.classList.add('wizard-panel');
 

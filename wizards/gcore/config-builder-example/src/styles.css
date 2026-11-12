@@ -1,0 +1,282 @@
+/* Pull in step-kit component styles (bundled by esbuild — no runtime fetch). */
+@import url("@gcore/wizard-step-kit/styles");
+
+/* Two panes need more than the base 900px page (see TOKENS.md). */
+:root { --gc-wizard-max-width: 1280px; }
+
+/* Base element styles come from /styles/v1/wizard.css (injected). Colours must use var(--gc-*) tokens. */
+
+.cb-lede {
+    color: var(--gc-wizard-text-muted);
+    max-width: 65ch;
+}
+
+.cb-field {
+    display: block;
+    margin-bottom: 0.75rem;
+}
+
+.cb-field > span {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.cb-field input,
+.cb-field select,
+.cb-field textarea {
+    width: 100%;
+}
+
+.cb-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.cb-row > .cb-field {
+    flex: 1 1 12rem;
+}
+
+.cb-note {
+    border: 1px solid var(--gc-wizard-border);
+    border-left-width: 4px;
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    background: var(--gc-wizard-surface);
+    font-size: 0.875rem;
+}
+
+.cb-note--info { border-left-color: var(--gc-wizard-info); }
+
+.cb-note--warn { border-left-color: var(--gc-wizard-warning); }
+
+.cb-note--danger { border-left-color: var(--gc-wizard-danger); }
+
+/* Routes: the tree beside the selected rule's form; stacked on narrow screens. */
+.cb-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2rem;
+    align-items: start;
+    margin: 1rem 0;
+}
+
+@media (width <= 56rem) {
+    .cb-split { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* The tree: nested lists, joined by elbow connectors drawn on each child item. */
+.cb-outline,
+.cb-outline ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.cb-outline { margin-bottom: 1rem; }
+
+.cb-outline ul { margin-left: 1rem; }
+
+.cb-outline ul > li {
+    position: relative;
+    padding: 0.75rem 0 0 1.75rem;
+}
+
+/* ┗ the elbow into this item, meeting the card's first line */
+.cb-outline ul > li::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1.5rem;
+    height: 2.125rem;
+    border-left: 1px solid var(--gc-wizard-border);
+    border-bottom: 1px solid var(--gc-wizard-border);
+    border-bottom-left-radius: 6px;
+}
+
+/* ┃ the line on down to the next sibling */
+.cb-outline ul > li:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-left: 1px solid var(--gc-wizard-border);
+}
+
+/* One rule: a card with its order number, type badge, match and outcome, and ↑ ↓ × on the right. */
+.cb-rule {
+    display: flex;
+    align-items: flex-start;
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    background: var(--gc-wizard-bg);
+}
+
+.cb-rule:hover { border-color: var(--gc-wizard-text-muted); }
+
+.cb-rule--current,
+.cb-rule--current:hover {
+    border-color: var(--gc-wizard-info);
+    box-shadow: inset 0 0 0 1px var(--gc-wizard-info);
+}
+
+.cb-rule__body {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.5rem;
+    min-width: 0;
+    padding: 0.625rem 0.75rem;
+    border: 0;
+    border-radius: var(--gc-wizard-radius);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+button.cb-rule__body { cursor: pointer; }
+
+.cb-rule--otherwise {
+    border-style: dashed;
+    color: var(--gc-wizard-text-muted);
+}
+
+.cb-rule__tools {
+    display: flex;
+    gap: 0.125rem;
+    padding: 0.375rem 0.375rem 0 0;
+}
+
+/* Quiet icon buttons (the base styles every button as a filled one). */
+.cb-icon {
+    min-width: 1.75rem;
+    padding: 0.125rem 0.25rem;
+    border: 0;
+    border-radius: var(--gc-wizard-radius);
+    background: transparent;
+    color: var(--gc-wizard-text-muted);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.cb-icon--small {
+    min-width: 0;
+    font-size: 0.75rem;
+}
+
+/* In a row of labelled fields, sit level with the inputs (fields have a bottom margin). */
+.cb-row > .cb-icon { margin-bottom: 0.875rem; }
+
+.cb-icon:disabled {
+    background: transparent;
+    opacity: 0.3;
+}
+
+.cb-icon:hover:not(:disabled) {
+    background: var(--gc-wizard-surface);
+    color: var(--gc-wizard-text);
+}
+
+.cb-icon--danger:hover:not(:disabled) { color: var(--gc-wizard-danger); }
+
+.cb-rule__num {
+    min-width: 1.25rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.cb-rule__match { overflow-wrap: anywhere; }
+
+.cb-rule--root .cb-rule__match { font-weight: 600; }
+
+.cb-rule__then {
+    color: var(--gc-wizard-text-muted);
+    overflow-wrap: anywhere;
+}
+
+.cb-rule__err {
+    color: var(--gc-wizard-danger);
+    font-size: 0.8125rem;
+}
+
+.cb-badge {
+    padding: 0 0.375rem;
+    border-radius: var(--gc-wizard-radius);
+    background: var(--gc-wizard-surface);
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* "+ Add rule…": a quiet select that reads as an action, not a form field. */
+.cb-add {
+    width: auto;
+    border-style: dashed;
+    background: transparent;
+    color: var(--gc-wizard-text-muted);
+    font-size: 0.8125rem;
+}
+
+/* The selected rule's form: flat sections, no nested boxes. */
+.cb-editor h3 { margin: 0.25rem 0 0; }
+
+.cb-editor h4 {
+    margin: 1.25rem 0 0.5rem;
+    color: var(--gc-wizard-text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.cb-errors {
+    color: var(--gc-wizard-danger);
+    font-size: 0.8125rem;
+    margin: 0.25rem 0 0;
+    padding-left: 1.25rem;
+}
+
+.cb-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0.25rem 0;
+}
+
+.cb-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.125rem;
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0 0.25rem 0 0.5rem;
+    font-size: 0.8125rem;
+}
+
+.cb-matches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.cb-preview {
+    max-height: 20rem;
+    overflow: auto;
+    font-size: 0.8125rem;
+    background: var(--gc-wizard-surface);
+    border: 1px solid var(--gc-wizard-border);
+    border-radius: var(--gc-wizard-radius);
+    padding: 0.75rem;
+}
+
+.cb-raw {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.cb-meter { width: 100%; }

@@ -162,6 +162,28 @@ which params become required or optional in each. This is *whether-to-collect* b
 from the *how-to-select* branch that `pickOrCreate` already removes. Flag any `mandatory: false`
 secret/store that a specific profile actually requires (fail-closed behaviour).
 
+## Bindings
+
+> Read by `/wizard-bindings` to write `src/deployment.js` (the SDK field map).
+> One row per value the wizard collects. Draft it from the param tables and the
+> constraints above; mark anything you inferred with "(inferred)".
+
+| Form field | Lives at (app Ref → place) | Kind | Shared? | Fixed once deployed? |
+|------------|----------------------------|------|---------|----------------------|
+| loginUrl   | filter → env `MFA_LOGIN_URL` | env (string) | no | no |
+| authPrefix | filter + app → env `AUTH_PREFIX`; CDN rule `app-route` | custom | yes, both apps | yes — the CDN route and bookmarked login links use it |
+| seedStore  | app → store `TOTP_USER_SEEDS` | store | no | yes — enrolled users' seeds live in it |
+| sessionKey | filter + app → secret `MFA_SESSION_KEY` | secret (generated) | yes, both apps | yes — changing it signs everyone out |
+
+- **App Refs**: one short, stable Ref per template (e.g. `filter`, `app`), launch
+  template first. A Ref is permanent: on Re-entry a renamed Ref is a new app.
+- **Kind**: `env` (a string, or JSON/number via a codec), `secret`, `store`,
+  `keypair` (private half in a secret, public JWK in env), or `custom` (one value
+  stored in several shapes, or CDN rules/origins).
+- **Fixed**: say *why* — the reason is shown to the user on Re-entry. The app name,
+  its template/binary and the CDN resource are always fixed by the portal; don't
+  list them.
+
 ## Notes
 
 Anything not captured above: API shape surprises, mandatory-false params that are
@@ -214,6 +236,8 @@ After writing, output a brief summary:
 - Where `TARGET.md` was written
 - How many params were found per template
 - How many cross-app constraints were identified (explicit vs inferred)
+- How many bindings were drafted, and which are fixed once deployed
+- Next step: `/wizard-bindings <name>` writes the field map from the Bindings table
 - Whether a source repo was used or only API data
 
 If no portal access is available (API call fails), fall back to reading the

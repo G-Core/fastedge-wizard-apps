@@ -6,11 +6,11 @@ export function Note({ kind = 'info', children }) {
     return <div className={`totp-note totp-note--${kind}`}>{children}</div>;
 }
 
-export function Field({ label, hint, value, onChange, placeholder }) {
+export function Field({ label, hint, value, onChange, placeholder, disabled = false }) {
     return (
         <label className="totp-field">
             <span>{label}</span>
-            <input type="text" value={value} placeholder={placeholder}
+            <input type="text" value={value} placeholder={placeholder} disabled={disabled}
                 onChange={(e) => onChange(e.target.value)} />
             {hint && <span className="totp-hint">{hint}</span>}
         </label>

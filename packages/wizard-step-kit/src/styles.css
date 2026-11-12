@@ -292,6 +292,45 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
     border-color: var(--gc-wizard-success);
 }
 
+/* Locked: same compact row as set, but neutral — nothing to act on. */
+gc-resource-row[locked] {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 1rem;
+    padding: 0.625rem 1rem;
+    border-style: dashed;
+}
+
+gc-resource-row[locked] > :not(.wizard-row-main, .wizard-row-badge) {
+    display: none;
+}
+
+gc-resource-row[locked] .wizard-row-badge {
+    display: inline-block;
+}
+
+gc-resource-row[locked] .wizard-row-value {
+    color: var(--gc-wizard-text);
+}
+
+/* ── Locked field wrapper ──────────────────────────────────────────── */
+
+gc-locked {
+    display: block;
+}
+
+/* The reason reads as the field's help text: take the field's bottom margin away so the line sits
+   right under the input, and put the gap below the line instead. */
+gc-locked[reason] > :nth-last-child(2) {
+    margin-bottom: 0;
+}
+
+.wizard-locked-reason {
+    margin: 0.25rem 0 1rem;
+    color: var(--gc-wizard-text-muted);
+    font-size: 0.8125rem;
+}
+
 .wizard-row-clear {
     margin-left: 0.25rem;
     padding: 0;

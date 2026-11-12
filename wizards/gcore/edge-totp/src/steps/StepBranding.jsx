@@ -9,7 +9,8 @@ export function StepBranding({ f, set }) {
                 Customise the hosted OTP challenge and enrolment pages. Leave unselected for
                 the default unstyled pages.
             </p>
-            <OptionalPanels onChange={(sel) => set({ brandMode: sel[0] || 'none' })}>
+            <OptionalPanels value={f.brandMode === 'custom' ? ['custom'] : []}
+                onChange={(sel) => set({ brandMode: sel[0] || 'none' })}>
                 <WizardPanel value="custom" label="Add branding">
                     <Field label="Brand name" value={f.brandName}
                         onChange={(v) => set({ brandName: v })}

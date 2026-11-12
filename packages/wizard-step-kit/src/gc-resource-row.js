@@ -21,6 +21,11 @@
  *   label-set    (string, default "set")
  *   label-unset  (string, default "not set")
  *   label-clear  (string, default "Clear") — aria-label for the × button
+ *   locked       (boolean) — can't change (e.g. fixed after the first deploy, from the SDK
+ *                            field map's `locks()`): compact row, a neutral "🔒 locked" badge, no
+ *                            clear button, host actions hidden, aria-disabled
+ *   reason       (string)  — why it's locked; replaces `sub` while locked
+ *   label-locked (string, default "locked")
  *
  * Events (bubble):
  *   clear — the × button was clicked
@@ -33,6 +38,7 @@
 class GcResourceRow extends HTMLElement {
     static observedAttributes = [
         'title', 'sub', 'value', 'set', 'clearable', 'label-set', 'label-unset', 'label-clear',
+        'locked', 'reason', 'label-locked',
     ];
 
     #main = null;
@@ -75,7 +81,9 @@ class GcResourceRow extends HTMLElement {
 
     #update() {
         this.#titleEl.textContent = this.getAttribute('title') || '';
-        const sub = this.getAttribute('sub');
+        const locked = this.hasAttribute('locked');
+        if (locked) this.setAttribute('aria-disabled', 'true'); else this.removeAttribute('aria-disabled');
+        const sub = locked ? this.getAttribute('reason') || this.getAttribute('sub') : this.getAttribute('sub');
         this.#subEl.textContent = sub || '';
         this.#subEl.hidden = !sub;
 
@@ -85,12 +93,15 @@ class GcResourceRow extends HTMLElement {
         if (value) this.#valueEl.title = value; else this.#valueEl.removeAttribute('title');
 
         const isSet = this.hasAttribute('set');
-        this.#badge.classList.toggle('wizard-row-badge--set', isSet);
-        this.#badge.textContent = isSet
-            ? (this.getAttribute('label-set') || 'set')
-            : (this.getAttribute('label-unset') || 'not set');
+        this.#badge.classList.toggle('wizard-row-badge--set', isSet && !locked);
+        this.#badge.classList.toggle('wizard-row-badge--locked', locked);
+        this.#badge.textContent = locked
+            ? `🔒 ${this.getAttribute('label-locked') || 'locked'}`
+            : isSet
+                ? (this.getAttribute('label-set') || 'set')
+                : (this.getAttribute('label-unset') || 'not set');
 
-        if (isSet && this.hasAttribute('clearable')) {
+        if (isSet && !locked && this.hasAttribute('clearable')) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'wizard-row-clear';

@@ -4,6 +4,19 @@ import { optional } from '@gcoredev/fastedge-wizard-sdk';
 import { ResourceRow } from '@gcore/wizard-step-kit/react';
 import { Field } from '../components.jsx';
 
+function ProofFields({ f, set }) {
+    return (
+        <>
+            <Field label="Proof TTL (seconds)" value={f.proofTtl}
+                onChange={(v) => set({ proofTtl: v })}
+                hint="How long the one-time proof cookie is valid. Short is intentional — it's single-use. Default: 90" />
+            <Field label="Proof cookie name" value={f.proofCookie}
+                onChange={(v) => set({ proofCookie: v })}
+                hint="Name of the one-time ES256 proof cookie. Default: mfa_proof" />
+        </>
+    );
+}
+
 // The full request-time gate, including the challenge round trip. Duplicated
 // per variant (rather than shared) so each panel can highlight its own
 // difference directly on the diagram — the "valid" arrow and the Origin box
@@ -107,7 +120,7 @@ function VariantBDiagram() {
     );
 }
 
-export function StepVariant({ session, f, set }) {
+export function StepVariant({ session, f, set, reentry = false, locks = {} }) {
     const [busy, setBusy] = useState(false);
     async function genKeypair() {
         setBusy(true);
@@ -129,7 +142,30 @@ export function StepVariant({ session, f, set }) {
                 CDN edge, or your origin server. Both variants run the same challenge/verify loop
                 shown below; this only changes what happens after a user enters a correct code —
                 highlighted on each diagram.</p>
-            <OptionalPanels onChange={(sel) => set({ variant: sel[0] || '' })}>
+            {locks.variant && (
+                <ResourceRow title="Enforcement variant"
+                    value={f.variant === 'B' ? 'Variant B — origin verifies the proof' : 'Variant A — edge enforces'}
+                    set locked={f.variant === 'B' ? `${locks.variant} You can still change the proof settings.` : locks.variant} />
+            )}
+            {reentry && f.variant === 'B' && (
+                <>
+                    {locks.proofKey ? (
+                        <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set
+                            locked={locks.proofKey} sub="Reused as deployed — your origin already trusts its public key." />
+                    ) : (
+                        // The deployed keypair couldn't be read (e.g. its public JWK is gone): repair it.
+                        <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set={!!f.proofKey}
+                            sub="The deployed keypair can't be read. A new one replaces it — then give your origin the new public key, or it will reject every proof."
+                            onClear={() => set({ proofKey: null })}>
+                            <button onClick={genKeypair} disabled={busy}>Generate new keypair</button>
+                        </ResourceRow>
+                    )}
+                    <ProofFields f={f} set={set} />
+                </>
+            )}
+            {!reentry && (
+            <OptionalPanels value={f.variant ? [f.variant] : []}
+                onChange={(sel) => set({ variant: sel[0] || '' })}>
                 <WizardPanel value="A" label="Variant A — edge enforces (recommended)">
                     <VariantADiagram />
                     <p>The CDN blocks any request to a protected path unless it carries a valid
@@ -161,14 +197,10 @@ export function StepVariant({ session, f, set }) {
                         set={!!f.proofKey} value={f.proofKey?.name} onClear={() => set({ proofKey: null })}>
                         <button onClick={genKeypair} disabled={busy}>Generate keypair</button>
                     </ResourceRow>
-                    <Field label="Proof TTL (seconds)" value={f.proofTtl}
-                        onChange={(v) => set({ proofTtl: v })}
-                        hint="How long the one-time proof cookie is valid. Short is intentional — it's single-use. Default: 90" />
-                    <Field label="Proof cookie name" value={f.proofCookie}
-                        onChange={(v) => set({ proofCookie: v })}
-                        hint="Name of the one-time ES256 proof cookie. Default: mfa_proof" />
+                    <ProofFields f={f} set={set} />
                 </WizardPanel>
             </OptionalPanels>
+            )}
         </>
     );
 }
