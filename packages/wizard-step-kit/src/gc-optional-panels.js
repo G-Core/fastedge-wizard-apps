@@ -69,7 +69,8 @@ class GcOptionalPanels extends HTMLElement {
 
             const val = panel.getAttribute('value') ?? '';
             panel.setAttribute('role', 'option');
-            panel.setAttribute('aria-selected', 'false');
+            // From the stored selection: `selected` may have been set before this panel existed.
+            panel.setAttribute('aria-selected', String(this.#selected.has(val)));
             panel.setAttribute('tabindex', '0');
             panel.classList.add('wizard-panel');
 

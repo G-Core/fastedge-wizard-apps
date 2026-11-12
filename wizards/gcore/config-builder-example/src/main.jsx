@@ -11,7 +11,7 @@ import { DeployProgress, Locked, WizardShell, WizardStep } from '@gcore/wizard-s
 
 import {
     ENV_READ_LIMIT_BYTES,
-    MAX_CONFIG_BYTES,
+    MAX_PLAN_BYTES,
     SIZE_WARN_BYTES,
     configBytes,
     emptyConfig,
@@ -23,6 +23,8 @@ import { ENV_KEY, loadForm, lockedFields, toDeployPlan } from './deployment.js';
 import { Outline, RuleEditor } from './tree.jsx';
 
 const hostOrigin = new URLSearchParams(location.search).get('hostOrigin') || 'https://portal.gcore.com';
+
+const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
 
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
 
@@ -70,20 +72,21 @@ function StepOverview({ name, setName, reentry, locks, loadError, onReset }) {
     );
 }
 
-function SizeMeter({ bytes }) {
+/** `bytes`: the serialized deploy plan (what the 1 MB cap applies to); `configSize`: the env value alone. */
+function SizeMeter({ bytes, configSize }) {
     return (
         <>
             <label className="cb-field">
-                <span>Config size: {kb(bytes)} of {kb(MAX_CONFIG_BYTES)}</span>
-                <meter className="cb-meter" min={0} max={MAX_CONFIG_BYTES} high={SIZE_WARN_BYTES} value={bytes} />
+                <span>Deployment size: {kb(bytes)} of {kb(MAX_PLAN_BYTES)}</span>
+                <meter className="cb-meter" min={0} max={MAX_PLAN_BYTES} high={SIZE_WARN_BYTES} value={bytes} />
             </label>
-            {bytes > MAX_CONFIG_BYTES ? (
-                <Note kind="danger">The config is too large to deploy through the portal: a deployment
+            {bytes > MAX_PLAN_BYTES ? (
+                <Note kind="danger">This deployment is too large to send through the portal: a deployment
                     message is limited to 1 MB in total. Remove or merge branches.</Note>
             ) : bytes > SIZE_WARN_BYTES ? (
-                <Note kind="warn">The config is close to the 1 MB a deployment message can carry.</Note>
+                <Note kind="warn">This deployment is close to the 1 MB a deployment message can carry.</Note>
             ) : null}
-            {bytes > ENV_READ_LIMIT_BYTES && bytes <= MAX_CONFIG_BYTES && (
+            {configSize > ENV_READ_LIMIT_BYTES && bytes <= MAX_PLAN_BYTES && (
                 <Note>Over 64 KB: the app must read this value with the dictionary API
                     (<code>dictionary::get</code>) — a plain environment read stops at 64 KB.</Note>
             )}
@@ -127,14 +130,14 @@ function StepRoutes({ config, setConfig, errors }) {
     );
 }
 
-function StepReview({ name, config, deploy }) {
+function StepReview({ name, config, planSize, deploy }) {
     return (
         <>
             <h2 tabIndex={-1}>Review &amp; deploy</h2>
             <p className="cb-lede">App <strong>{name}</strong> gets this <code>{ENV_KEY}</code>. You confirm the
                 change in a portal dialog before anything is written.</p>
             <Outline config={config} />
-            <SizeMeter bytes={configBytes(config)} />
+            <SizeMeter bytes={planSize} configSize={configBytes(config)} />
             <JsonPreview config={config} />
             <DeployProgress state={deploy} />
         </>
@@ -154,12 +157,20 @@ function Wizard({ session, template, current }) {
     const [deploy, setDeploy] = useState({ status: 'idle', plan: null, progress: [], result: null, error: null });
 
     const errors = useMemo(() => validate(config), [config]);
-    const bytes = useMemo(() => configBytes(config), [config]);
+    // The cap applies to the whole plan message (the config re-escaped inside ROUTER_CONFIG, plus every
+    // preserved env value). An invalid tree can't be saved into a plan yet; size the config alone then.
+    const planSize = useMemo(() => {
+        try {
+            return configBytes(toDeployPlan({ name: name.trim(), config }, { current, templateId: template?.id }));
+        } catch {
+            return configBytes(config);
+        }
+    }, [name, config, current, template]);
 
     const canAdvance = [
         !!name.trim() && !loadError,
-        Object.keys(errors).length === 0 && bytes <= MAX_CONFIG_BYTES,
-        deploy.status === 'idle' || deploy.status === 'error',
+        Object.keys(errors).length === 0 && planSize <= MAX_PLAN_BYTES,
+        deploy.status === 'idle' || (deploy.status === 'error' && deploy.result?.status !== 'partial'),
     ][step];
 
     async function handleFinish() {
@@ -178,10 +189,17 @@ function Wizard({ session, template, current }) {
                 onPlan: (plan) => setDeploy((d) => ({ ...d, status: 'applying', plan })),
                 onProgress: (ev) => setDeploy((d) => ({ ...d, progress: [...d.progress, ev] })),
             });
-            setDeploy((d) => ({ ...d, status: 'done', result }));
+            // Only a complete apply finishes the wizard. rolled_back left nothing behind, so it can be retried;
+            // partial did (or changed the revision), so a retry would duplicate it or be refused — reopen instead.
+            setDeploy((d) => ({
+                ...d,
+                status: result.status === 'complete' ? 'done' : 'error',
+                result,
+                error: result.status === 'partial' ? PARTIAL_APPLY : null,
+            }));
         } catch (err) {
             const cancelled = err instanceof WizardError && err.code === 'user_cancelled';
-            setDeploy((d) => ({ ...d, status: cancelled ? 'idle' : 'error', error: cancelled ? null : err.message }));
+            setDeploy((d) => (cancelled ? { status: 'idle', plan: null, progress: [], result: null, error: null } : { ...d, status: 'error', error: err.message }));
         }
     }
 
@@ -205,7 +223,7 @@ function Wizard({ session, template, current }) {
                 <StepRoutes config={config} setConfig={setConfig} errors={errors} />
             </WizardStep>
             <WizardStep title="Review">
-                <StepReview name={name} config={config} deploy={deploy} />
+                <StepReview name={name} config={config} planSize={planSize} deploy={deploy} />
             </WizardStep>
         </WizardShell>
     );

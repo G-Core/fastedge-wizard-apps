@@ -118,7 +118,7 @@ export function OptionalPanels({ multiple = false, value, onChange, children }) 
         const el = ref.current;
         if (!el || selected === undefined) return;
         el.selected = selected ? selected.split('\n') : [];
-    }, [selected]);
+    }, [selected, multiple]); // re-apply after `multiple` changes: dropping it collapses the selection
 
     return h('gc-optional-panels', { ref }, children);
 }

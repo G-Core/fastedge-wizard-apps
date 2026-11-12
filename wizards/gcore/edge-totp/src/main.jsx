@@ -81,6 +81,8 @@ const DEFAULT_FORM = {
     brandHover: '',
 };
 
+const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
+
 /** Re-entry: the form as loaded from the live deployment, plus what couldn't be read. */
 function reentryForm(current) {
     const { form, errors } = loadForm(current);
@@ -102,6 +104,13 @@ function Wizard({ session, filterT, appT, current }) {
         state: { status: 'idle', plan: null, progress: [], result: null, error: null },
     });
 
+    // Re-entry: a field that couldn't be read, left as loaded, keeps its deployed value on save
+    // (reentryValues) — so it doesn't have to pass the checks a replacement value does.
+    const kept = (name) =>
+        reentry &&
+        !!loaded.errors[name] &&
+        JSON.stringify(fromForm(f)[name]) === JSON.stringify(fromForm(loaded.form)[name]);
+
     // Steps: 0 Overview · 1 Variant · 2 CDN · 3 Routing · 4 Store · 5 Secrets
     //        6 TOTP settings · 7 Branding · 8 Review
     const canAdvance = useMemo(() => {
@@ -114,22 +123,25 @@ function Wizard({ session, filterT, appT, current }) {
                 return !!f.cdn;
             case 3:
                 return (
-                    !!f.audience.trim() &&
-                    f.authPrefix.startsWith('/') &&
-                    f.authPrefix.length > 1 &&
+                    (!!f.audience.trim() || kept('audience')) &&
+                    ((f.authPrefix.startsWith('/') && f.authPrefix.length > 1) || kept('authPrefix')) &&
                     (f.protectionScope === 'all' ||
-                        (f.protectionScope === 'paths' && parseProtectedPaths(f.protectedPaths).length > 0))
+                        (f.protectionScope === 'paths' && parseProtectedPaths(f.protectedPaths).length > 0) ||
+                        kept('protection'))
                 );
             case 4:
-                return !!f.store;
+                return !!f.store || kept('store');
             case 5:
-                return !!(f.sessionKey && f.handoff && f.enroll && f.gcore);
+                return ['sessionKey', 'handoff', 'enroll', 'gcore'].every((k) => !!f[k] || kept(k));
             case 6:
                 return true; // all optional
             case 7:
                 return true; // all optional
             case 8:
-                return deploy.state.status === 'idle' || deploy.state.status === 'error';
+                return (
+                    deploy.state.status === 'idle' ||
+                    (deploy.state.status === 'error' && deploy.state.result?.status !== 'partial')
+                );
             default:
                 return false;
         }
@@ -156,10 +168,19 @@ function Wizard({ session, filterT, appT, current }) {
                 onPlan: (plan) => setDeploy((d) => ({ state: { ...d.state, status: 'applying', plan } })),
                 onProgress: (ev) => setDeploy((d) => ({ state: { ...d.state, progress: [...d.state.progress, ev] } })),
             });
-            setDeploy((d) => ({ state: { ...d.state, status: 'done', result } }));
+            // Only a complete apply finishes the wizard. rolled_back left nothing behind, so it can be retried;
+            // partial did (or changed the revision), so a retry would duplicate it or be refused — reopen instead.
+            setDeploy((d) => ({
+                state: {
+                    ...d.state,
+                    status: result.status === 'complete' ? 'done' : 'error',
+                    result,
+                    error: result.status === 'partial' ? PARTIAL_APPLY : null,
+                },
+            }));
         } catch (err) {
             if (err instanceof WizardError && err.code === 'user_cancelled') {
-                setDeploy((d) => ({ state: { ...d.state, status: 'idle' } }));
+                setDeploy({ state: { status: 'idle', plan: null, progress: [], result: null, error: null } });
             } else {
                 setDeploy((d) => ({ state: { ...d.state, status: 'error', error: err.message } }));
             }
@@ -234,6 +255,7 @@ function Wizard({ session, filterT, appT, current }) {
                 <StepTotpSettings
                     f={f}
                     set={set}
+                    locks={locks}
                 />
             </WizardStep>
             <WizardStep title="Branding">

@@ -38,6 +38,10 @@ test('field map: broken JSON, an unknown version and a missing key are reported,
     assert.equal(future.raw, '{"schemaVersion":9}');
 
     assert.equal(fields.load(deployedWith({})).errors.config.code, 'missing');
+
+    // A malformed tree (a null child) is a load error, not a crash when the form validates it.
+    const nullChild = JSON.stringify({ schemaVersion: 1, root: { type: 'root', children: [null] } });
+    assert.equal(fields.load(deployedWith({ [ENV_KEY]: nullChild })).errors.config.code, 'invalid');
 });
 
 test('field map: an invalid tree is refused on save', () => {

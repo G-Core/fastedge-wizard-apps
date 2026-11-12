@@ -150,6 +150,44 @@ test('authPrefix: moves the route rule and both env keys together; diverged when
     assert.equal(fields.load(live).errors.authPrefix.code, 'diverged');
 });
 
+test('authPrefix: a route changed in the dashboard is reported, and locks nothing', () => {
+    const live = { ...deployed(), revision: 'rev-1' };
+    live.cdnRules.find((r) => r.ref === 'app-route').rule = '^/auth/totp/v2';
+    assert.equal(fields.load(live).errors.authPrefix.code, 'diverged');
+    assert.equal(lockedFields(live).authPrefix, undefined, 'unloadable fixed field is repairable');
+
+    const gone = { ...deployed(), revision: 'rev-1' };
+    gone.cdnRules = gone.cdnRules.filter((r) => r.ref !== 'app-route');
+    assert.equal(fields.load(gone).errors.authPrefix.code, 'missing');
+});
+
+test('enrollment: digits, period, algorithm and storage prefix are fixed on Re-entry', () => {
+    const live = { ...deployed(), revision: 'rev-1' };
+    assert.match(lockedFields(live).enrollment, /enrolled users/);
+
+    // Issuer and drift stay editable.
+    const issuer = fields.save(fromForm({ ...FORM, totpIssuer: 'Shop 2', totpDrift: '2' }), live);
+    assert.equal(issuer.fastedgeApps[1].env.TOTP_ISSUER, 'Shop 2');
+
+    // Changing a code parameter, or setting the panel back to default over a non-default one, is refused.
+    assert.throws(() => fields.save(fromForm({ ...FORM, totpDigits: '6' }), live), /fixed once deployed/);
+    assert.throws(() => fields.save(fromForm({ ...FORM, totpMode: 'default' }), live), /fixed once deployed/);
+    assert.throws(
+        () => fields.save(fromForm({ ...FORM, policyMode: 'custom', kvPrefix: 'mfa:' }), live),
+        /fixed once deployed/,
+    );
+});
+
+test('protection: a filter rule re-pointed or re-prioritised in the dashboard is reported', () => {
+    const moved = deployed();
+    moved.cdnRules.find((r) => r.ref === 'filter:/checkout').fastedgeFilter.appRef = 'other';
+    assert.equal(fields.load(moved).errors.protection.code, 'diverged');
+
+    const weighted = deployed();
+    weighted.cdnRules.find((r) => r.ref === 'filter:/checkout').weight = 5;
+    assert.equal(fields.load(weighted).errors.protection.code, 'diverged');
+});
+
 test('store: KV_STORE_ID and the store binding must agree', () => {
     const live = deployed();
     live.fastedgeApps[1].env.KV_STORE_ID = '8';
@@ -205,7 +243,7 @@ test('Re-entry locks: what the form must lock, with reasons; save refuses to cha
 
     const live = { ...deployed(), revision: 'rev-1' };
     const locks = lockedFields(live);
-    assert.deepEqual(Object.keys(locks).sort(), ['authPrefix', 'cdn', 'name', 'sessionKey', 'store', 'variant']);
+    assert.deepEqual(Object.keys(locks).sort(), ['authPrefix', 'cdn', 'enrollment', 'name', 'sessionKey', 'store', 'variant']);
     assert.match(locks.store, /seeds live here/);
 
     assert.throws(() => fields.save(fromForm({ ...FORM, store: { id: 8, name: 'other' } }), live), /"store" is fixed once deployed/);

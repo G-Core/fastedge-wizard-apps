@@ -23,6 +23,8 @@ let pickedResource = null;
 let step = 0;
 let deployState = { status: 'idle', plan: null, progress: [], result: null, error: null };
 
+const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
+
 function setDeployState(patch) {
     deployState = { ...deployState, ...patch };
     deployProgress.state = deployState;
@@ -34,7 +36,7 @@ function updateCanAdvance() {
     let ready;
     if (step === 0) ready = appNameInput.value.trim().length > 0;
     else if (step === 1) ready = !!pickedResource;
-    else ready = deployState.status === 'idle' || deployState.status === 'error';
+    else ready = deployState.status === 'idle' || (deployState.status === 'error' && deployState.result?.status !== 'partial');
     shell.toggleAttribute('can-advance', ready);
     setError('');
 }
@@ -129,10 +131,16 @@ try {
                         onProgress: (ev) => setDeployState({ progress: [...deployState.progress, ev] }),
                     },
                 );
-                setDeployState({ status: 'done', result });
+                // Only a complete apply finishes the wizard. rolled_back left nothing behind, so it can be retried;
+                // partial did (or changed the revision), so a retry would duplicate it or be refused — reopen instead.
+                setDeployState({
+                    status: result.status === 'complete' ? 'done' : 'error',
+                    result,
+                    error: result.status === 'partial' ? PARTIAL_APPLY : null,
+                });
             } catch (err) {
                 if (err instanceof WizardError && err.code === 'user_cancelled') {
-                    setDeployState({ status: 'idle' });
+                    setDeployState({ status: 'idle', plan: null, progress: [], result: null, error: null });
                 } else {
                     setDeployState({ status: 'error', error: err.message });
                     console.error(err);

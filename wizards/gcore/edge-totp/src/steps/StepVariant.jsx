@@ -149,8 +149,17 @@ export function StepVariant({ session, f, set, reentry = false, locks = {} }) {
             )}
             {reentry && f.variant === 'B' && (
                 <>
-                    <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set={!!f.proofKey}
-                        locked={locks.proofKey} sub="Reused as deployed — your origin already trusts its public key." />
+                    {locks.proofKey ? (
+                        <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set
+                            locked={locks.proofKey} sub="Reused as deployed — your origin already trusts its public key." />
+                    ) : (
+                        // The deployed keypair couldn't be read (e.g. its public JWK is gone): repair it.
+                        <ResourceRow title="ES256 proof keypair" value={f.proofKey?.name} set={!!f.proofKey}
+                            sub="The deployed keypair can't be read. A new one replaces it — then give your origin the new public key, or it will reject every proof."
+                            onClear={() => set({ proofKey: null })}>
+                            <button onClick={genKeypair} disabled={busy}>Generate new keypair</button>
+                        </ResourceRow>
+                    )}
                     <ProofFields f={f} set={set} />
                 </>
             )}

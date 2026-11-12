@@ -67,6 +67,12 @@ const authPrefix = field.custom({
         const [a, b] = BOTH.map((ref) => appOf(state, ref).env?.AUTH_PREFIX);
         if (a === undefined && b === undefined) throw fieldError('missing', 'AUTH_PREFIX is not set');
         if (a !== b) throw fieldError('diverged', 'AUTH_PREFIX differs between the filter and the app');
+        // The route is part of this field too: one changed in the dashboard is reported, not overwritten.
+        const route = (state.cdnRules ?? []).find((r) => r.ref === 'app-route');
+        if (!route) throw fieldError('missing', 'the app-route CDN rule is missing');
+        if (route.rule !== `^${escapeRegex(a)}` || route.weight !== 1 || route.originGroupRef !== 'app-origin') {
+            throw fieldError('diverged', 'the app-route CDN rule no longer matches AUTH_PREFIX');
+        }
         return a;
     },
     save(value, state) {
@@ -100,6 +106,11 @@ const protection = field.custom({
     load(state) {
         const rules = (state.cdnRules ?? []).filter((r) => r.ref.startsWith('filter:'));
         if (!rules.length) throw fieldError('missing', 'no filter rules are deployed');
+        // A rule re-pointed or re-prioritised in the dashboard is reported, not overwritten on save.
+        const odd = rules.find(
+            (r) => r.weight !== 10 || Object.entries(filterBinding).some(([k, v]) => r.fastedgeFilter?.[k] !== v),
+        );
+        if (odd) throw fieldError('diverged', `filter rule "${odd.name}" no longer runs the filter app as deployed`);
 
         const all = rules.find((r) => r.ref === FILTER_ALL);
         if (all) {
@@ -175,6 +186,25 @@ export const TOTP_DEFAULTS = { issuer: 'TOTP', digits: '6', period: '30', algo: 
 export const POLICY_DEFAULTS = { sessionTtl: '28800', maxAttempts: '5', ticketTtl: '90', kvPrefix: 'totp:', selfEnroll: 'true' };
 export const BRAND_DEFAULTS = { name: '', logo: '', favicon: '', color: DEFAULT_BRAND_COLOR, hover: '' };
 
+// Read-only: what existing enrollments depend on — the code shape every enrolled authenticator was set
+// up with, and the prefix its seed is stored under. The keys are written by the totp/policy groups; as a
+// fixed field, a Re-entry save that would change any of them (an edit, or a panel set back to default
+// over a non-default value) is refused.
+const ENROLLMENT_KEYS = {
+    digits: ['TOTP_DIGITS', TOTP_DEFAULTS.digits],
+    period: ['TOTP_PERIOD', TOTP_DEFAULTS.period],
+    algo: ['TOTP_ALGORITHM', TOTP_DEFAULTS.algo],
+    kvPrefix: ['KV_KEY_PREFIX', POLICY_DEFAULTS.kvPrefix],
+};
+const enrollment = field.custom({
+    writes: [],
+    load(state) {
+        const env = appOf(state, 'app').env ?? {};
+        return Object.fromEntries(Object.entries(ENROLLMENT_KEYS).map(([name, [key, def]]) => [name, env[key] ?? def]));
+    },
+    save: (_value, state) => state,
+});
+
 // Why each fixed field can't change on Re-entry — shown next to the locked input (fields.locks()).
 const FIXED = {
     authPrefix: 'Fixed after the first deploy — the CDN route and both apps use it.',
@@ -182,6 +212,7 @@ const FIXED = {
     sessionKey: 'Fixed after the first deploy — changing it would sign every visitor out.',
     variant: 'Fixed after the first deploy.',
     proofKey: 'Reused as deployed — your origin already trusts its public key.',
+    enrollment: "Fixed after the first deploy — enrolled users' authenticators and stored seeds depend on it.",
 };
 
 export const fields = defineFieldMap({
@@ -200,6 +231,7 @@ export const fields = defineFieldMap({
     proofKey: field.fixed(FIXED.proofKey, field.keypair('app', 'MFA_PROOF_SIGNING_KEY', 'MFA_PROOF_PUBLIC_JWK')),
     proofTtl: field.env('app', 'PROOF_TTL', { default: '90', omitIfDefault: true }),
     proofCookie: field.env('app', 'MFA_PROOF_COOKIE', { default: 'mfa_proof', omitIfDefault: true }),
+    enrollment: field.fixed(FIXED.enrollment, enrollment),
     totp: envGroup(
         { issuer: 'TOTP_ISSUER', digits: 'TOTP_DIGITS', period: 'TOTP_PERIOD', algo: 'TOTP_ALGORITHM', drift: 'TOTP_DRIFT' },
         TOTP_DEFAULTS,

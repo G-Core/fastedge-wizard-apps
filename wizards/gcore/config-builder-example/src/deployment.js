@@ -29,9 +29,15 @@ export const ENV_KEY = 'ROUTER_CONFIG';
 export const fields = defineFieldMap({
     config: field.env(APP_REF, ENV_KEY, {
         // The env value is a string; field.json parses/stringifies it. `parse` also upgrades an older
-        // schemaVersion. `validate` runs before every save, so an invalid tree is never written.
+        // schemaVersion, and walks the tree once so a malformed one (a null child, an unknown node
+        // type) is a load error, not a crash while rendering. `validate` runs before every save, so
+        // an invalid tree is never written.
         codec: field.json({
-            parse: upgrade,
+            parse: (raw) => {
+                const config = upgrade(raw);
+                validate(config); // throws on a malformed tree; rule errors are left for the form
+                return config;
+            },
             validate: (config) => {
                 if (Object.keys(validate(config)).length) throw new Error('the config has validation errors');
             },

@@ -12,11 +12,12 @@ export const SCHEMA_VERSION = 1;
 
 /**
  * The host caps a deployment.plan message at 1 MB (every app's env travels in it) and rejects a larger
- * one with invalid_params. The config gets most of that; warn as it gets close, block before the cap.
+ * one with invalid_params. Measure the serialized plan, not the config: the config is a JSON string
+ * inside it, so every quote and backslash is escaped again. Warn as it gets close, block before the cap.
  */
 export const BRIDGE_LIMIT_BYTES = 1024 * 1024;
-/** The config's share of the plan message, leaving room for the rest of it. */
-export const MAX_CONFIG_BYTES = 960 * 1024;
+/** The plan's share of the message, leaving room for the message envelope. */
+export const MAX_PLAN_BYTES = BRIDGE_LIMIT_BYTES - 4 * 1024;
 export const SIZE_WARN_BYTES = 768 * 1024;
 /** Above this a plain env read (std::env / WASI) fails — the app must use dictionary::get. */
 export const ENV_READ_LIMIT_BYTES = 64 * 1024;
@@ -218,7 +219,7 @@ export function validate(config) {
     return errors;
 }
 
-/** Bytes of the encoded config (what crosses the bridge and is stored). */
+/** Bytes of a value as JSON: the config (what the app stores) or a whole plan (what crosses the bridge). */
 export const configBytes = (config) => new TextEncoder().encode(JSON.stringify(config)).length;
 
 // ── Tree edits (immutable) ───────────────────────────────────────────────────

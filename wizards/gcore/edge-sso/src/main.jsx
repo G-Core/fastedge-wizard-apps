@@ -30,6 +30,8 @@ const emptyProvider = { clientId: '', clientSecret: null, redirectUri: '' };
 
 // ── Wizard root ────────────────────────────────────────────────────────────
 
+const PARTIAL_APPLY = "Some changes couldn't be undone. Close the wizard and reopen it from the app to see what is deployed now.";
+
 function Wizard({ session, authT, filterT }) {
     const [step, setStep] = useState(0);
     const [f, setF] = useState({
@@ -109,7 +111,10 @@ function Wizard({ session, authT, filterT }) {
             case 6:
                 return true; // optional
             case 7:
-                return deploy.state.status === 'idle' || deploy.state.status === 'error';
+                return (
+                    deploy.state.status === 'idle' ||
+                    (deploy.state.status === 'error' && deploy.state.result?.status !== 'partial')
+                );
             default:
                 return false;
         }
@@ -275,10 +280,19 @@ function Wizard({ session, authT, filterT }) {
                 onPlan: (plan) => setDeploy((d) => ({ state: { ...d.state, status: 'applying', plan } })),
                 onProgress: (ev) => setDeploy((d) => ({ state: { ...d.state, progress: [...d.state.progress, ev] } })),
             });
-            setDeploy((d) => ({ state: { ...d.state, status: 'done', result } }));
+            // Only a complete apply finishes the wizard. rolled_back left nothing behind, so it can be retried;
+            // partial did (or changed the revision), so a retry would duplicate it or be refused — reopen instead.
+            setDeploy((d) => ({
+                state: {
+                    ...d.state,
+                    status: result.status === 'complete' ? 'done' : 'error',
+                    result,
+                    error: result.status === 'partial' ? PARTIAL_APPLY : null,
+                },
+            }));
         } catch (err) {
             if (err instanceof WizardError && err.code === 'user_cancelled') {
-                setDeploy((d) => ({ state: { ...d.state, status: 'idle' } }));
+                setDeploy({ state: { status: 'idle', plan: null, progress: [], result: null, error: null } });
             } else {
                 setDeploy((d) => ({ state: { ...d.state, status: 'error', error: err.message } }));
             }
