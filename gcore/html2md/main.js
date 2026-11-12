@@ -30,8 +30,16 @@ var GcWizardShell = class extends HTMLElement {
     this.#ro?.disconnect();
     window.removeEventListener("scroll", this.#onScroll);
   }
+  // Only the user scrolling UP unsticks. Our own smooth scroll fires scroll events mid-animation,
+  // and fast-growing content (re-entry updates stream progress lines ms apart) moves the bottom
+  // away while it runs — treating "not at the bottom yet" as "user scrolled away" lost the follow.
+  #lastScrollY = 0;
   #onScroll = () => {
-    if (this.#isVisible()) this.#stuckToBottom = this.#isAtBottom();
+    if (!this.#isVisible()) return;
+    const y = window.scrollY;
+    if (this.#isAtBottom()) this.#stuckToBottom = true;
+    else if (y < this.#lastScrollY) this.#stuckToBottom = false;
+    this.#lastScrollY = y;
   };
   #isAtBottom() {
     const doc = document.documentElement;
@@ -148,6 +156,7 @@ var GcWizardShell = class extends HTMLElement {
   #go(to, reason) {
     const steps = this.#steps();
     if (reason === "next" && this.#current === steps.length - 1) {
+      this.#stuckToBottom = true;
       this.dispatchEvent(new CustomEvent("finish", { bubbles: true }));
       return;
     }
@@ -220,6 +229,14 @@ var GcOptionalPanels = class extends HTMLElement {
       this.#updateDisplay();
     }
   }
+  get selected() {
+    return [...this.#selected];
+  }
+  set selected(values) {
+    const next = this.hasAttribute("multiple") ? values : values.slice(0, 1);
+    this.#selected = new Set(next);
+    this.#updateDisplay();
+  }
   #panels() {
     return [...this.querySelectorAll(":scope > gc-wizard-panel")];
   }
@@ -229,7 +246,7 @@ var GcOptionalPanels = class extends HTMLElement {
       panel._initialized = true;
       const val = panel.getAttribute("value") ?? "";
       panel.setAttribute("role", "option");
-      panel.setAttribute("aria-selected", "false");
+      panel.setAttribute("aria-selected", String(this.#selected.has(val)));
       panel.setAttribute("tabindex", "0");
       panel.classList.add("wizard-panel");
       const header = document.createElement("div");
@@ -288,7 +305,10 @@ var GcResourceRow = class extends HTMLElement {
     "clearable",
     "label-set",
     "label-unset",
-    "label-clear"
+    "label-clear",
+    "locked",
+    "reason",
+    "label-locked"
   ];
   #main = null;
   #titleEl = null;
@@ -321,7 +341,10 @@ var GcResourceRow = class extends HTMLElement {
   }
   #update() {
     this.#titleEl.textContent = this.getAttribute("title") || "";
-    const sub = this.getAttribute("sub");
+    const locked = this.hasAttribute("locked");
+    if (locked) this.setAttribute("aria-disabled", "true");
+    else this.removeAttribute("aria-disabled");
+    const sub = locked ? this.getAttribute("reason") || this.getAttribute("sub") : this.getAttribute("sub");
     this.#subEl.textContent = sub || "";
     this.#subEl.hidden = !sub;
     const value = this.getAttribute("value");
@@ -330,9 +353,10 @@ var GcResourceRow = class extends HTMLElement {
     if (value) this.#valueEl.title = value;
     else this.#valueEl.removeAttribute("title");
     const isSet = this.hasAttribute("set");
-    this.#badge.classList.toggle("wizard-row-badge--set", isSet);
-    this.#badge.textContent = isSet ? this.getAttribute("label-set") || "set" : this.getAttribute("label-unset") || "not set";
-    if (isSet && this.hasAttribute("clearable")) {
+    this.#badge.classList.toggle("wizard-row-badge--set", isSet && !locked);
+    this.#badge.classList.toggle("wizard-row-badge--locked", locked);
+    this.#badge.textContent = locked ? `\u{1F512} ${this.getAttribute("label-locked") || "locked"}` : isSet ? this.getAttribute("label-set") || "set" : this.getAttribute("label-unset") || "not set";
+    if (isSet && !locked && this.hasAttribute("clearable")) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "wizard-row-clear";
@@ -420,13 +444,38 @@ function appendCreated(ul, items, noun) {
 }
 customElements.define("gc-deploy-progress", GcDeployProgress);
 
-// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/protocol.js
+// node_modules/.pnpm/@gcore+wizard-step-kit@file+..+..+..+packages+wizard-step-kit_react@19.2.8/node_modules/@gcore/wizard-step-kit/src/gc-locked.js
+var GcLocked = class extends HTMLElement {
+  static observedAttributes = ["reason"];
+  #line = null;
+  connectedCallback() {
+    if (!this.#line) {
+      this.#line = document.createElement("div");
+      this.#line.className = "wizard-locked-reason";
+      this.append(this.#line);
+    }
+    this.#update();
+  }
+  attributeChangedCallback() {
+    if (this.#line) this.#update();
+  }
+  #update() {
+    const reason = this.getAttribute("reason");
+    this.#line.textContent = reason ? `\u{1F512} ${reason}` : "";
+    this.#line.hidden = !reason;
+    if (this.lastElementChild !== this.#line) this.append(this.#line);
+  }
+};
+customElements.define("gc-locked", GcLocked);
+
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.6/node_modules/@gcoredev/fastedge-wizard-sdk/dist/protocol.js
 var WIZARD_PROTOCOL_VERSION = 1;
 var MAX_MESSAGE_BYTES = 64 * 1024;
+var MAX_CONFIG_MESSAGE_BYTES = 1024 * 1024;
 var HANDSHAKE_TIMEOUT_MS = 1e4;
 var INTENT_TIMEOUT_MS = 6e4;
 
-// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/errors.js
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.6/node_modules/@gcoredev/fastedge-wizard-sdk/dist/errors.js
 var WizardError = class extends Error {
   constructor(code, message) {
     super(message);
@@ -444,17 +493,48 @@ async function optional(fn) {
   }
 }
 
-// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/version.js
-var SDK_VERSION = "0.0.5";
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.6/node_modules/@gcoredev/fastedge-wizard-sdk/dist/version.js
+var SDK_VERSION = "0.0.6";
 
-// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.5/node_modules/@gcoredev/fastedge-wizard-sdk/dist/sdk.js
+// node_modules/.pnpm/@gcoredev+fastedge-wizard-sdk@0.0.6/node_modules/@gcoredev/fastedge-wizard-sdk/dist/sdk.js
 function applyTheme(theme) {
   if (typeof document === "undefined")
     return;
   document.body.classList.remove("gc-theme-light", "gc-theme-dark");
   document.body.classList.add(`gc-theme-${theme}`);
 }
+var TOKEN_KEY = /^--gc-wizard-[a-z0-9-]+$/;
+var LENGTH = /^\d*\.?\d+(px|rem|em|%)?$/;
+var N = String.raw`[+-]?(\d+\.?\d*|\.\d+)(%|deg)?`;
+var COLOUR = new RegExp(String.raw`^(#([0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})` + String.raw`|(rgba?|hsla?)\(\s*(${N}(\s*,\s*${N}){2}(\s*,\s*${N})?|${N}(\s+${N}){2}(\s*/\s*${N})?)\s*\))$`, "i");
+var isColour = (v) => COLOUR.test(v) && (typeof CSS === "undefined" || CSS.supports("color", v));
+var appliedTokens = [];
+function applyTokens(tokens) {
+  if (typeof document === "undefined")
+    return;
+  const style = document.body.style;
+  for (const key of appliedTokens)
+    style.removeProperty(key);
+  appliedTokens = [];
+  if (!isRecord(tokens))
+    return;
+  for (const [key, raw] of Object.entries(tokens)) {
+    const value = typeof raw === "string" ? raw.trim() : "";
+    if (value.length > 64 || !TOKEN_KEY.test(key) || !(LENGTH.test(value) || isColour(value)))
+      continue;
+    style.setProperty(key, value);
+    appliedTokens.push(key);
+  }
+}
 var CLIENT_INTENT_TIMEOUT_MS = INTENT_TIMEOUT_MS + 3e4;
+function planGuarded(params, send) {
+  const createStyle = params.newCdnOrigins !== void 0 || params.newCdnRules !== void 0;
+  const desiredStyle = params.cdnOrigins !== void 0 || params.cdnRules !== void 0;
+  if (createStyle && desiredStyle) {
+    return Promise.reject(new WizardError("invalid_params", "deployment plan mixes newCdnOrigins/newCdnRules with cdnOrigins/cdnRules \u2014 use one style"));
+  }
+  return send(params);
+}
 function isRecord(value) {
   return typeof value === "object" && value !== null;
 }
@@ -501,10 +581,11 @@ var WizardSessionImpl = class {
       }
     };
     this.deployment = {
-      plan: (params) => this.invoke("deployment.plan", params),
+      current: () => this.invoke("deployment.current", {}),
+      plan: (params) => planGuarded(params, (p) => this.invoke("deployment.plan", p)),
       apply: (params) => this.invoke("deployment.apply", params),
       deploy: async (params, options) => {
-        const plan = await this.invoke("deployment.plan", params);
+        const plan = await planGuarded(params, (p) => this.invoke("deployment.plan", p));
         options?.onPlan?.(plan);
         const off = this.on("deployment.progress", (p) => {
           options?.onProgress?.(p);
@@ -523,6 +604,7 @@ var WizardSessionImpl = class {
     this.on("theme.changed", (p) => {
       const payload = p;
       applyTheme(payload.theme);
+      applyTokens(payload.tokens);
     });
   }
   handlePortMessage(event) {
@@ -645,6 +727,7 @@ function connect(options) {
       }
       const hello = data;
       applyTheme(hello.hostContext.theme ?? "light");
+      applyTokens(hello.hostContext.tokens);
       if (typeof document !== "undefined") {
         document.documentElement.lang = hello.hostContext.locale ?? "en";
       }
@@ -673,6 +756,7 @@ function setError(msg) {
 var pickedResource = null;
 var step = 0;
 var deployState = { status: "idle", plan: null, progress: [], result: null, error: null };
+var PARTIAL_APPLY = "Some changes couldn't be undone. Check the apps and CDN settings in the portal and remove what was left behind before deploying again.";
 function setDeployState(patch) {
   deployState = { ...deployState, ...patch };
   deployProgress.state = deployState;
@@ -683,7 +767,7 @@ function updateCanAdvance() {
   let ready;
   if (step === 0) ready = appNameInput.value.trim().length > 0;
   else if (step === 1) ready = !!pickedResource;
-  else ready = deployState.status === "idle" || deployState.status === "error";
+  else ready = deployState.status === "idle" || deployState.status === "error" && deployState.result?.status !== "partial";
   shell.toggleAttribute("can-advance", ready);
   setError("");
 }
@@ -761,10 +845,14 @@ try {
             onProgress: (ev) => setDeployState({ progress: [...deployState.progress, ev] })
           }
         );
-        setDeployState({ status: "done", result });
+        setDeployState({
+          status: result.status === "complete" ? "done" : "error",
+          result,
+          error: result.status === "partial" ? PARTIAL_APPLY : null
+        });
       } catch (err) {
         if (err instanceof WizardError && err.code === "user_cancelled") {
-          setDeployState({ status: "idle" });
+          setDeployState({ status: "idle", plan: null, progress: [], result: null, error: null });
         } else {
           setDeployState({ status: "error", error: err.message });
           console.error(err);

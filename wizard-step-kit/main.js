@@ -30,8 +30,16 @@ var GcWizardShell = class extends HTMLElement {
     this.#ro?.disconnect();
     window.removeEventListener("scroll", this.#onScroll);
   }
+  // Only the user scrolling UP unsticks. Our own smooth scroll fires scroll events mid-animation,
+  // and fast-growing content (re-entry updates stream progress lines ms apart) moves the bottom
+  // away while it runs — treating "not at the bottom yet" as "user scrolled away" lost the follow.
+  #lastScrollY = 0;
   #onScroll = () => {
-    if (this.#isVisible()) this.#stuckToBottom = this.#isAtBottom();
+    if (!this.#isVisible()) return;
+    const y = window.scrollY;
+    if (this.#isAtBottom()) this.#stuckToBottom = true;
+    else if (y < this.#lastScrollY) this.#stuckToBottom = false;
+    this.#lastScrollY = y;
   };
   #isAtBottom() {
     const doc = document.documentElement;
@@ -148,6 +156,7 @@ var GcWizardShell = class extends HTMLElement {
   #go(to, reason) {
     const steps = this.#steps();
     if (reason === "next" && this.#current === steps.length - 1) {
+      this.#stuckToBottom = true;
       this.dispatchEvent(new CustomEvent("finish", { bubbles: true }));
       return;
     }
@@ -220,6 +229,14 @@ var GcOptionalPanels = class extends HTMLElement {
       this.#updateDisplay();
     }
   }
+  get selected() {
+    return [...this.#selected];
+  }
+  set selected(values) {
+    const next = this.hasAttribute("multiple") ? values : values.slice(0, 1);
+    this.#selected = new Set(next);
+    this.#updateDisplay();
+  }
   #panels() {
     return [...this.querySelectorAll(":scope > gc-wizard-panel")];
   }
@@ -229,7 +246,7 @@ var GcOptionalPanels = class extends HTMLElement {
       panel._initialized = true;
       const val = panel.getAttribute("value") ?? "";
       panel.setAttribute("role", "option");
-      panel.setAttribute("aria-selected", "false");
+      panel.setAttribute("aria-selected", String(this.#selected.has(val)));
       panel.setAttribute("tabindex", "0");
       panel.classList.add("wizard-panel");
       const header = document.createElement("div");
@@ -288,7 +305,10 @@ var GcResourceRow = class extends HTMLElement {
     "clearable",
     "label-set",
     "label-unset",
-    "label-clear"
+    "label-clear",
+    "locked",
+    "reason",
+    "label-locked"
   ];
   #main = null;
   #titleEl = null;
@@ -321,7 +341,10 @@ var GcResourceRow = class extends HTMLElement {
   }
   #update() {
     this.#titleEl.textContent = this.getAttribute("title") || "";
-    const sub = this.getAttribute("sub");
+    const locked = this.hasAttribute("locked");
+    if (locked) this.setAttribute("aria-disabled", "true");
+    else this.removeAttribute("aria-disabled");
+    const sub = locked ? this.getAttribute("reason") || this.getAttribute("sub") : this.getAttribute("sub");
     this.#subEl.textContent = sub || "";
     this.#subEl.hidden = !sub;
     const value = this.getAttribute("value");
@@ -330,9 +353,10 @@ var GcResourceRow = class extends HTMLElement {
     if (value) this.#valueEl.title = value;
     else this.#valueEl.removeAttribute("title");
     const isSet = this.hasAttribute("set");
-    this.#badge.classList.toggle("wizard-row-badge--set", isSet);
-    this.#badge.textContent = isSet ? this.getAttribute("label-set") || "set" : this.getAttribute("label-unset") || "not set";
-    if (isSet && this.hasAttribute("clearable")) {
+    this.#badge.classList.toggle("wizard-row-badge--set", isSet && !locked);
+    this.#badge.classList.toggle("wizard-row-badge--locked", locked);
+    this.#badge.textContent = locked ? `\u{1F512} ${this.getAttribute("label-locked") || "locked"}` : isSet ? this.getAttribute("label-set") || "set" : this.getAttribute("label-unset") || "not set";
+    if (isSet && !locked && this.hasAttribute("clearable")) {
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "wizard-row-clear";

@@ -238,6 +238,33 @@ gc-resource-row[set] > :not(.wizard-row-main, .wizard-row-badge) {
   color: var(--gc-wizard-success);
   border-color: var(--gc-wizard-success);
 }
+gc-resource-row[locked] {
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 0.625rem 1rem;
+  border-style: dashed;
+}
+gc-resource-row[locked] > :not(.wizard-row-main, .wizard-row-badge) {
+  display: none;
+}
+gc-resource-row[locked] .wizard-row-badge {
+  display: inline-block;
+}
+gc-resource-row[locked] .wizard-row-value {
+  color: var(--gc-wizard-text);
+}
+gc-locked {
+  display: block;
+}
+gc-locked[reason] > :nth-last-child(2) {
+  margin-bottom: 0;
+}
+.wizard-locked-reason {
+  margin: 0.25rem 0 1rem;
+  color: var(--gc-wizard-text-muted);
+  font-size: 0.8125rem;
+}
 .wizard-row-clear {
   margin-left: 0.25rem;
   padding: 0;
